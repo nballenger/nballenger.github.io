@@ -1,0 +1,392 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <title>Toplines: Salt Essentials</title>
+    <link href="bootstrap/css/bootstrap.min.css" rel="stylesheet">
+  </head>
+  <body>
+    <div class="container">
+    <article id="toplines-nosql-distilled">
+      <header>
+        <h1>Salt Essentials<small>, a book by Sebenik and Hatch, 2014</small></a></h1>
+        <p><i>Salt Essentials</i>, Craig Sebenik, Thomas Hatch; O'Reilly Media, Inc. 2014</p>
+      </header>
+
+      <div class="well"> 
+        <section id="executive-summary">
+          <header>
+            <h2 class="text-center">Executive Summary</h2>
+          </header>
+        </section>
+      </div>
+
+      <section id="chapter-summaries">
+        <header>
+          <h2 class="text-center">Chapter Summaries</h2>
+        </header>
+
+        <section class="chapter" id="chapter-01">
+          <header>
+            <h3>Chapter 1: Introduction</h3>
+          </header>
+          <h4>What is salt?</h4>
+
+          <ul>
+            <li>Remote execution framework, configuration management system.</li>
+            <li>Written in python, extending it is just writing more python.</li>
+          </ul>
+
+          <h4>High Level Architecture</h4>
+
+          <ul>
+            <li><strong>Minion</strong>: a host within salt.</li>
+            <li><strong>Master</strong>: host that performs coordination between minions.</li>
+            <li><strong>Socket</strong>: location minions can subscribe to command events.</li>
+            <li><strong>Target</strong>: minion(s) intended to receive a specific command event.</li>
+            <li>Publication / subscription happens via ZeroMQ.</li>
+            <li><strong>Salt state</strong>: how a given minion should be configured.</li>
+            <li>All master-minion communications happens via AES encryption.</li>
+          </ul>
+
+          <h4>Some Quick Examples</h4>
+          <ul>
+            <li>Install the <code>apache</code> package on every host:
+<pre>
+salt \* pkg.install apache
+</pre>
+            </li>
+            <li>State definition yaml file:
+<pre>
+/var/www/index.html
+file:
+- managed
+- source: salt://webserver/main.html
+</pre>
+            </li>
+          </ul>
+
+          <h4>Extending Salt</h4>
+          <ul>
+            <li>Custom modules are called <strong>grains</strong> and <strong>pillars</strong>.</li>
+          </ul>
+
+          <h4>Variety of Topology Options</h4>
+          <ul>
+            <li>Multiple ways to configure Master-Minion relationships: syndication masters, peer publishers, etc.</li>
+          </ul>
+
+        </section><!-- /chapter-01 -->
+
+        <section class="chapter" id="chapter-02">
+          <header>
+            <h3>Chapter 2: Quick Start - First taste of Salt</h3>
+          </header>
+
+          <h4>Single Master Setup</h4>
+
+          <ul>
+            <li>Couple of ways to install:
+              <ul>
+                <li>Bootstrap script from <code>bootstrap.saltstack.org</code></li>
+                <li>RPM install <code>salt</code> and <code>salt-minion</code> from EPEL on master and minions</li>
+                <li>RPM install <code>salt-master</code> on master</li>
+                <li>Book mentions .deb install, doesn't give package name.</li>
+              </ul>
+            </li>
+          </ul>
+
+          <h4>Starting Up</h4>
+
+          <ul>
+            <li>2 main daemons in <code>/usr/bin</code> are <code>salt-minion</code> and <code>salt-master</code></li>
+            <li>Set DNS name of master in <code>/etc/salt/minion</code></li>
+            <li>Start <code>salt-minion</code> on all minions + master, start <code>salt-master</code> on the master.</li>
+            <li>If in doubt, check <code>/var/log/salt/minion</code> for a message about caching keys.</li>
+          </ul>
+
+          <h4>Basic Commands</h4>
+
+          <ul>
+            <li><strong><code>salt</code></strong>
+              <ul>
+                <li>Runs on master, executes command on multiple minions.</li>
+              </ul>
+            </li>
+            <li><strong><code>salt-key</code></strong>
+              <ul>
+                <li>Lets salt admin manage keys between minions and master</li>
+                <li>3 key buckets: <code>accepted</code>, <code>rejected</code>, <code>unaccepted</code></li>
+                <li>Ex. usage: <code>salt-key --accept=&lt;minion-id&gt;</code></li>
+                <li>Command with no args lists all current keys</li>
+                <li>Has options to list by bucket, show key fingerprints, accept/reject keys in Unaccepted bucket, etc.</li>
+              </ul>
+            </li>
+            <li><strong><code>salt-call</code></strong>
+              <ul>
+                <li>Runs an action on a single minion, from that minion.</li>
+                <li>Calling on master only affects the master box itself.</li>
+              </ul>
+            </li>
+            <li><strong><code>salt-run</code></strong>
+              <ul>
+                <li>Runs 'runners' on the master, which target minions programmatically rather than by identifier from the command line.</li>
+                <li>Arg to command is the name of the runner to execute.</li>
+              </ul>
+            </li>
+          </ul>
+
+          <h4>Key Management</h4>
+
+          <ul>
+            <li>When a minion starts, it connects to the master and gets the master's public key, sends its public key to the master.</li>
+            <li>Keys start in Unaccepted bucket, must be accepted with <code>salt-key</code>.</li>
+            <li>Keys stored in <code>/etc/salt/pki/master</code> and <code>minion</code>.</li>
+          </ul>
+
+          <h4>Minion Targeting Based on ID</h4>
+
+          <ul>
+            <li><strong>shell globs</strong>: wrap in quotes or escape to prevent the shell from interpreting the glob: <code>salt \* test.ping</code> sends to all minions.</li>
+            <li><strong>listing minion dns names</strong>: <code>salt -L 'a.ex.com,b.ex.com' test.ping</code></li>
+            <li><strong>regex</strong>: <code>salt -E 'minion(1|2)' test.ping</code></li>
+          </ul>
+
+          <h4>Minion Targeting Based on Minion Data</h4>
+          <ul>
+            <li>Minions gather os/env info, present it as 'grains'</li>
+            <li>You can add custom grains in <code>/etc/salt/minion</code>:
+<pre>
+grains:
+  roles:
+  - webserver
+  - other
+</pre>
+            </li>
+            <li>Querying from the master after minion restart:
+<pre>
+#&gt; salt 'minion1*' grains.item roles
+minion1.example.com:
+  roles:
+    webserver
+    other
+</pre>
+            </li>
+            <li>Acting on sets of minions using grains:
+<pre>
+salt -G 'roles:other' test.ping
+</pre>
+            </li>
+          </ul>
+
+          <h4>How Remote Execution Works</h4>
+
+          <ul>
+            <li>Basic model is the master publishes events, the minions subscribe to events</li>
+            <li>All goes over ZeroMQ, which is the messaging bus</li>
+            <li>Master sets up <code>publish_port</code> at <code>4505</code> and <code>ret_port</code> at <code>4506</code></li>
+            <li>Minions subscribe to <code>publish_port</code> looking for commands to execute</li>
+            <li>Minions report back on <code>ret_port</code></li>
+          </ul>
+
+          <h4>Master-less Minions</h4>
+
+          <ul>
+            <li>If you run <code>salt-call</code> with the <code>--local</code> flag, it will not only run locally, but won't contact the master for files or data.</li>
+            <li>Adding <code>file_client: local</code> to the minion config makes that permanent.</li>
+          </ul>
+        </section><!-- /chapter-02 -->
+
+        <section class="chapter" id="chapter-03">
+          <header>
+            <h3>Chapter 3: Execution Modules - The functional foundation</h3>
+          </header>
+
+          <h4>Builtin Execution Modules</h4>
+
+          <ul>
+            <li>This is just a partial list, see docs for complete list</li>
+            <li><strong>Documentation with <code>sys.doc</code></strong>
+              <ul>
+                <li>Calling it from <code>salt</code> or <code>salt-call</code>:
+<pre>
+salt \* sys.doc test.ping
+</pre>
+                </li>
+                <li>Documentation comes from python docstrings.</li>
+              </ul>
+            </li>
+            <li><strong>Key Execution Modules</strong>
+              <ul>
+                <li><strong><code>cmd</code></strong>:
+                  <ul>
+                    <li>Lets you run any arbitrary command, with args, on any minion</li>
+                    <li>Ex: 
+<pre>
+salt \* cmd.run 'grep root /etc/passwd'
+</pre>
+                    </li>
+                  </ul>
+                </li>
+                <li><strong><code>user</code></strong>:
+                  <ul>
+                    <li>Lets you work with users on a host</li>
+                    <li>Ex:
+<pre>
+salt \* user.add jane 1001
+salt \* user.chfullname jane 'Jane Doe'
+</pre>
+                    </li>
+                  </ul>
+                </li>
+                <li><strong><code>pkg</code></strong>:
+                  <ul>
+                    <li>Package management</li>
+                    <li>Ex:
+<pre>
+salt \* pkg.latest_version at
+salt \* pkg.install at
+salt \* pkg.list_upgrades
+</pre>
+                    </li>
+                  </ul>
+                </li>
+                <li><strong><code>service</code></strong>:
+                  <ul>
+                    <li>Configure and manipulate services</li>
+                    <li>Ex:
+<pre>
+salt minion1.example.com service.available httpd
+salt minion1.example.com service.status httpd
+salt minion1.example.com service.start httpd
+</pre>
+                    </li>
+                  </ul>
+                </li>
+              </ul>
+            </li>
+          </ul>
+
+          <h4><code>salt</code> Options</h4>
+
+          <ul>
+            <li><strong><code>--verbose</code></strong></li>
+            <li><strong><code>--log-level debug</code></strong></li>
+            <li><strong><code>--timeout=10</code></strong> &mdash; Default is 5s.</li>
+            <li><strong><code>--output=yaml</code></strong></li>
+          </ul>
+        </section><!-- /chapter-03 -->
+
+        <section class="chapter" id="chapter-04">
+          <header>
+            <h3>Chapter 4: Configuration Management &ndash; Salt States</h3>
+          </header>
+
+          <h4>State File Overview</h4>
+          <ul>
+            <li>State stored in "SLS files"</li>
+            <li>Multiple formats, examples here use YAML</li>
+            <li>Example SLS to add a user:
+<pre>
+user_jane:                  &larr; id that can be ref'd from other state files
+  user.present:             &larr; command / 'state declaration'
+    - user: jane            &larr; data / args to command
+    - fullname: Jane Doe    &larr; ''
+    - uid: 1001             &larr; ''
+    - home: /home/jane      &larr; ''
+</pre>
+            </li>
+            <li>Execution with the <code>state</code> module:
+<pre>
+salt master.example.com state.sls default
+</pre>
+            </li>
+            <li>State system has multiple layers:
+              <ul>
+                <li><strong>Lowest state: function call</strong>
+                  <ul>
+                    <li><code>state.single</code> execution module lets you call state functions directly:
+<pre>
+salt master.example.com state.single user.present \
+  name=jane fullname='Jane Doe' uid=1001
+</pre>
+                    </li>
+                  </ul>
+                </li>
+                <li><strong>Next: Low Chunk</strong>
+                  <ul>
+                    <li>State is abstracted here as data.</li>
+                    <li>Even the state module is represented as data:
+<pre>
+#&gt; salt master.example.com state.low \
+  '{name: jane, uid: 1001, state: user, fun: present}'
+
+master.example.com
+    -----------
+    __run_num__:
+        0
+    changes:
+        ----------
+    comment:
+        User jane is present and up to date
+    name:
+        jane
+    result:
+        True
+</pre>
+                    </li>
+                  </ul>
+                </li>
+                <li><strong>High Data</strong>
+                  <ul>
+                    <li>Represented in these examples as the YAML in the SLS files</li>
+                    <li>Merges function call and low chunk to create complete picture</li>
+                    <li>Can view complete state with <code>state.show_sls</code> module:
+<pre>
+salt master.example.com state.show_sls default --out yaml
+</pre>
+                    </li>
+                  </ul>
+                </li>
+                <li><strong>Additional layers: <code>highstate</code> and <code>overstate</code></strong>:
+                  <ul>
+                    <li><code>highstate</code> combines the previous layers with information about which combinations to run on which machine</li>
+                    <li><code>overstate</code> allows states to depend on one another</li>
+                  </ul>
+                </li>
+              </ul>
+            </li>
+            <li><strong>File location and the <code>top</code> file:</strong>
+              <ul>
+                <li>To create <code>highstate</code>, we need targeting within the state system</li>
+                <li>At the root of the state tree is a file called <code>top.sls</code></li>
+                <li>It contains a mapping of minions to state files, with minions targetable via id or grains</li>
+                <li>The 'top file' has to be in the file root on the master, which defaults to <code>/srv/salt</code></li>
+                <li>Viewable with <code>salt-call config.get file_roots</code></li>
+                <li>Simple top file:
+<pre>
+base:             &larr; environment
+  '*':            &larr; targeting
+    - default     &larr; list of states to apply
+</pre>
+                </li>
+              </ul>
+            </li>
+            <li><strong>File inheritance and Namespaces</strong>:
+              <ul>
+                <li>The file roots directories hold state files, custom execution modules, and runners</li>
+                <li>If you wanted to do multiple things in the <code>default</code> environment, you could create <code>/srv/salt/default</code> and <code>/srv/salt/default/users.sls</code>, then other sls files to hold additional states.</li>
+                <li>Then you'd edit <code>top.sls</code> to point at <code>default.users</code> instead of just <code>default</code></li>
+              </ul>
+            </li>
+          </ul>
+
+          <h4>Building Complex States with includes and excludes</h4>
+
+          <ul>
+            <li>Given two state files in <code>/srv/salt/default</code>, <code>users.sls</code> and <code>pkgs.sls</code>
+          <h4>Ordering States with Requisites</h4>
+        </section>
+      </section><!-- /chapter-summaries -->
+    </article>
+  </body>
+</html>
