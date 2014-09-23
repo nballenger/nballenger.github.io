@@ -383,9 +383,146 @@ base:             &larr; environment
           <h4>Building Complex States with includes and excludes</h4>
 
           <ul>
-            <li>Given two state files in <code>/srv/salt/default</code>, <code>users.sls</code> and <code>pkgs.sls</code>
+            <li>Given two state files in <code>/srv/salt/default</code>, <code>users.sls</code> and <code>pkgs.sls</code>, you could create a third file, <code>default/all.sls</code> that would include the first two:
+<pre>
+include:
+  - default.users
+  - default.pkgs
+</pre>
+            </li>
+            <li>Relative includes would be <code>.users</code> instead of <code>default.users</code></li>
+            <li>If you use a state file called <code>init.sls</code> in a directory, it will run when that directory itself is referenced in an include.</li>
+            <li>If you had an include statement that included '<code>default</code>', but you had both <code>default.sls</code> and <code>default/init.sls</code>, <code>default.sls</code> would be chosen to fill the include because it's a shorter path.</li>
+            <li>Excludes will either ignore or remove the effect of a state file. Unclear from the book text.</li>
+          </ul>
           <h4>Ordering States with Requisites</h4>
-        </section>
+          <ul>
+            <li>Example <code>top.sls</code>:
+<pre>
+base:
+  '*':
+    - default
+  'minion1.example.com':
+    - webserver
+</pre>
+            </li>
+            <li>Example <code>webserver/init.sls</code>:
+<pre>
+httpd:
+  pkg:
+    - installed
+  file:
+    - managed
+    - name: /etc/httpd/conf.d/virtual.conf
+    - source: salt://webserver/virtual.conf
+    - require:
+      - pkg: httpd
+</pre>
+            </li>
+            <li>Example <code>webserver/virtual.conf</code>:
+<pre>
+# A virtual server config file. (Empty at the moment)
+</pre>
+            </li>
+            <li><q><code>virtual.conf</code> will be copied to the target minion only after the <code>httpd</code> package is successfully installed.</q></li>
+          </ul>
+        </section><!-- /chapter-04 -->
+
+        <section class="chapter" id="chapter-05">
+          <header>
+            <h3>Chapter 5: Minion Data &ndash; Master Data</h3>
+          </header>
+          
+          <h4>Grains are Minion Data</h4>
+          <ul>
+            <li>Grains are static pieces of data calculated when the minion starts.</li>
+            <li>The minion sends grain data to the master for targeting.</li>
+            <li>You can add to the existing list of grains with python code.</li>
+            <li><strong>Basic Grain Operations</strong>:
+              <ul>
+                <li>Listing all grains on a minion:
+<pre>
+#&gt; salt master.example.com grains.ls
+</pre>
+                </li>
+                <li>Showing the value of a single grain:
+<pre>
+#&gt; salt '*' grains.item os
+</pre>
+                </li>
+              </ul>
+            </li>
+            <li><strong>Setting Grains</strong>:
+              <ul>
+                <li>Listing the grain values that were set in <code>/etc/salt/minion</code> in chapter 2:
+<pre>
+#&gt; salt '*' grains.item roles
+</pre>
+                The setting was done by adding this to the conf file:
+<pre>
+grains:
+  roles:
+  - webserver
+  - other
+</pre>
+                </li>
+                <li>If the only data in a file is grains, you don't have to explicitly list them under a <code>grains</code> key. Example <code>/etc/salt/grains</code>:
+<pre>
+roles:
+- webserver
+- other
+</pre>
+                </li>
+                <li>Setting from the command line with <code>grains.setval</code>:
+<pre>
+#&gt; salt master.example.com grains.setval test foo
+</pre>
+                This writes values to <code>/etc/salt/grains</code> for persistence.
+                </li>
+              </ul>
+            </li>
+            <li><strong>Targeting with Grains in the <code>top</code> file</strong>:
+              <ul>
+                <li>Targeting by the <code>roles</code> grain:
+<pre>
+base:
+  '*':
+    - default
+  'roles:webserver':
+    - match: grain
+    - webserver
+</pre>
+                </li>
+              </ul>
+          </ul>
+
+          <h4>Pillars are Server Side Data</h4>
+          <ul>
+            <li>Grains are data on the minion, pillars are data stored on the master.</li>
+            <li>A pillar is per-minion, and a minion can only see its own pillars.</li>
+            <li><strong>Simple Pillar Example</strong>:
+              <ul>
+                <li>Getting the file name where pillar data is stored on the master:
+<pre>
+#&gt; salt-call config.get pillar_roots
+</pre>
+                </li>
+                <li>Default is actually in <code>/srv/pillar</code>, book changes it intentionally.</li>
+                <li>Pillar files also need a top file to know how to set data for a minion. Example of basic <code>/srv/salt/pillar/base/top.sls</code>:
+<pre>
+base:
+  '*':
+    - test
+</pre>
+                Which references <code>/srv/salt/pillar/base/test.sls</code>:
+<pre>
+test_data: some data
+</pre>
+                </li>
+              </ul>
+            </li>
+          </ul>
+        </section><!-- /chapter-05 -->
       </section><!-- /chapter-summaries -->
     </article>
   </body>

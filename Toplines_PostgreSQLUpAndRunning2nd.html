@@ -1,0 +1,1298 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <title>Toplines: PostgreSQL: Up and Running, 2nd Edition, Hsu and Obe</title>
+    <link href="./bootstrap/css/bootstrap.min.css" rel="stylesheet">
+  </head>
+  <body>
+    <div class="container">
+    <article id="toplines-restful-web-services">
+      <header>
+      <h1>PostgreSQL: Up and Running, 2nd ed.<small>, Hsu and Obe, 2015</small></h1>
+      </header>
+
+      <div class="well"> 
+      <section id="executive-summary">
+        <header>
+          <h2 class="text-center">Executive Summary</h2>
+        </header>
+        <h3>Stuff that randomly blew my mind</h3>
+
+        <ul>
+          <li>Every table created has a custom datatype created along with it, as well as a custom array type.</li>
+          <li>You can create 'template databases' that are edit-locked, and base new databases on them.</li>
+          <li>If you create one schema per user (or 'role' in postgres terms), and name the schema the same as the user, you can set the global search path to <code>search_path = "$user", public;</code> in the conf file, and everybody will get their queries addressed to the tables in their schema automatically.</li>
+          <li>It sounds <em>really</em> easy to accidentally install extensions into the <code>public</code> schema without intending to.</li>
+          <li>You can manipulate the on-disk data directory for a tablespace from inside a running instance.</li>
+          <li>You can purge log files in <code>pg_log</code> with no problems, but if you touch the stuff in <code>pg_xlog</code> (transactions) or <code>pg_clog</code> (active commits), you'll screw up the whole install.</li>
+          <li>The selection of data types you get out of the box is kind of nuts. In addition to the basic stuff you get <code>intervals</code> (spans of time not tied to a timeline), arrays for every kind of built in and custom datatype, numeric ranges that follow <code>[...)</code> bounding notation, explicit <code>json</code> and <code>xml</code> datatypes, each with introspection functions like <code>json_extract_path</code> and <code>xpath</code>.</li>
+          <li>You can create custom functions that then get aliased to operators for custom types, so your datatypes can respond gracefully to arbitrary operations and comparisons.</li>
+          <li>Tables can inherit structure from each other.</li>
+          <li>You can index the output of a function on a column, and you can index only some subset of rows in a table.</li>
+          <li>You can issue UPDATEs against (some) views.</li>
+          <li>You can do DISTINCT queries using a DISTINCT ON clause, which lets you say which columns must be distinct.</li>
+          <li>You can use functions that return sets in a SELECT statement's field list.</li>
+        </ul>
+
+        <h3>MySQL - PostgreSQL Equivalencies</h3>
+        <table class="table table-bordered">
+          <thead>
+            <tr>
+              <th>Operation</th>
+              <th>MySQL Version</th>
+              <th>PostgreSQL Version</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <th>Connect to DB</th>
+              <td>
+<pre>
+connect <i>dbname</i>;
+use <i>dbname</i>;
+</pre>
+              </td>
+              <td>
+<pre>
+\c <i>dbname</i>
+</pre>
+              </td>
+            </tr>
+            <tr>
+              <th>List Tables</th>
+              <td></td>
+              <td></td>
+            </tr>
+            <tr>
+              <th>Describe a Table</th>
+              <td></td>
+              <td></td>
+            </tr>
+          </tbody>
+        </table>
+      </section>
+      </div>
+      <section>
+        <header>
+          <h2>Chapter Summaries</h2>
+        </header>
+
+        <section class="chapter" id="chapter-01">
+          <header>
+            <h3>Chapter 1: The Basics</h3>
+          </header>
+          
+          <h4>Where to Get PostgreSQL</h4>
+          <ul>
+            <li>Download the latest stable release for your OS.</li>
+          </ul>
+
+          <h4>Administration Tools</h4>
+          <ul>
+            <li><strong>PSQL</strong>:
+              <ul>
+                <li>Included in all distributions.</li>
+                <li>Has import/export for delimited files, report write that can export HTML</li>
+                <li>CLI only</li>
+              </ul>
+            </li>
+            <li><strong>pgAdmin</strong>:
+              <ul>
+                <li>Free GUI admin tool, also from postgres devs</li>
+                <li>Runs on desktop, can connect to multiple postgres servers</li>
+              </ul>
+            </li>
+            <li><strong>phpPgAdmin</strong>:
+              <ul>
+                <li>Web based admin tool patterned on phpMyAdmin for MySQL</li>
+              </ul>
+            </li>
+            <li><strong>Adminer</strong>:
+              <ul>
+                <li>Free php app that does PostgreSQL, MySQL, SQLite, SQL Server, and Oracle.</li>
+                <li>Has a decent relational diagrammer.</li>
+                <li>Can be deployed as a single php file.</li>
+              </ul>
+            </li>
+          </ul>
+
+          <h4>PostgreSQL Database Assets</h4>
+          <ul>
+            <li>This is a list of core assets--postgres has more than a lot of other db systems.</li>
+            <li><strong>service</strong> &mdash; postgres installs as daemonized on most OSs</li>
+            <li><strong>database</strong> &mdash; each postgres service has many databases</li>
+            <li><strong>schema</strong> &mdash; from ANSI SQL, next level of organization after database</li>
+            <li><strong>catalog</strong> &mdash; system schemas storing postgres built-ins and metadata. Every db has <code>pg_catalog</code> (functions, tables, views, casts, types) and <code>information_schema</code> (views exposing postgres meta info)</li>
+            <li><strong>variable</strong> &mdash; options that can be set at the service, database, and other levels</li>
+            <li><strong>extension</strong> &mdash; (in 9.1+), packages of functions, data types, casts, index types, tables, Grand Unified Configurations (GUCs). Installed or removed as a unit.</li>
+            <li><strong>table</strong> &mdash; first class citizens within schemas</li>
+            <li><strong>foreign table and foreign data wrapper (FDW)</strong> &mdash; virtual tables linked to data outside the database. Can link to CSV files, pg tables on another server, table in a different rdbms, nosql db system, or a web service. Configuring foreign tables is done with foreign data wrappers, which handshake with the external source.</li>
+            <li><strong>tablespace</strong> &mdash; physical location where data is stored</li>
+            <li><strong>view</strong> &mdash; abstraction that allows you to treat a persisted query like a table</li>
+            <li><strong>function</strong> &mdash; transforms that can return scalars or sets of records</li>
+            <li><strong>language</strong> &mdash; you can create functions with procedural languages. Out of the box will do SQL, PLPGSQL, and C. You can also install additional languages like Python, JavaScript, Perl, and R.</li>
+            <li><strong>operator</strong> &mdash; symbolic named functions like <code>=</code> that have the backing of an operator</li>
+            <li><strong>data type</strong> &mdash; basic types like integers, characters, arrays. postgres also has 'composite types' which have attributes of different types. Composite types can have custom operators.</li>
+            <li><strong>cast</strong> &mdash; prescriptions for converting between data types</li>
+            <li><strong>sequence</strong> &mdash; what controls auto incrementation of a serial data type</li>
+            <li><strong>trigger</strong> &mdash; procedures that fire in response to data change events</li>
+            <li><strong>rule</strong> &mdash; stored instructions to substitute one action for another, as when accessing a view</li>
+            <li><strong>row or record</strong> &mdash; items in a table</li>
+          </ul>
+
+          <h4>Database Drivers</h4>
+          <ul>
+            <li>For Python, book recommends <code>psycopg</code>, notes that Django has feature rich support for postgres</li>
+          </ul>
+
+          <h4>Notable PostgreSQL Forks</h4>
+          <ul>
+            <li><strong>Closed/Proprietary:</strong>
+              <ul>
+                <li><strong>Netezza</strong> &mdash; data warehousing</li>
+                <li><strong>Redshift</strong> &mdash; fork of a fork, data warehousing in AWS</li>
+                <li><strong>GreenPlum</strong> &mdash; data warehousing, petabyte size analysis</li>
+                <li><strong>PostgreSQL Advanced Plus</strong> &mdash; adds Oracle syntax and compatibility features</li>
+              </ul>
+            </li>
+            <li><strong>Open:</strong>
+              <ul>
+                <li><strong>tPostgres, Postgres-XC, Big SQL</strong> &mdash; open source forks the authors find interesting</li>
+                <li>BigSQL lets postgres talk to hadoop/hive, because it comes with a foreign data wrapper for hadoop</li>
+              </ul>
+            </li>
+          </ul>
+        </section><!-- /chapter-01 -->
+
+        <section class="chapter" id="chapter-02">
+          <header>
+            <h3>Chapter 2: Database Administration</h3>
+          </header>
+          <h4>Configuration Files</h4>
+          <ul>
+            <li>Three main files: <code>postgresql.conf</code> for general settings, <code>pg_hba.conf</code> for access control, <code>pg_ident.conf</code> for specific authentication credentials.</li>
+            <li>Restarts happen via the service manager outside postgres, reloads can be done with <code>SELECT pg_reload_conf();</code> inside an admin client.</li>
+            <li>External reload can be done with <code>pg_ctl reload -D &lt;path to data dir&gt;</code>, or <code>service postgresql-9.3 reload</code></li>
+            <li><strong><code>postgresql.conf</code></strong>
+              <ul>
+                <li>General settings like memory allocation, default storage location, ip address to listen on, etc.</li>
+                <li>9.4 (not general release as of Sept 2014) will introduce a file called <code>postgresql.auto.conf</code> that can be written with <code>ALTER SYSTEM</code> calls, and overrides <code>postgresql.conf</code>.</li>
+                <li>You can check current settings by querying the <code>pg_settings</code> view, eg.:
+<pre>
+SELECT name, context, unit, boot_val, reset_val
+FROM pg_settings
+WHERE name IN (
+  'listen_addresses',
+  'max_connections',
+  'shared_buffers',
+  'effective_cache_size',
+  'work_mem',
+  'maintenance'
+)
+ORDER BY context, name;
+</pre>
+                </li>
+                <li>In the output of that, if <code>context</code> is set to <code>postmaster</code>, changing the parameter will require a service restart. If it's <code>user</code>, just a reload, which won't terminate active connections.</li>
+                <li>Changing network settings will require a restart.</li>
+              </ul>
+            </li>
+            <li><strong><code>pg_hba.conf</code></strong>
+              <ul>
+                <li>Controls security, at the server level and database level</li>
+                <li>Changes require restart or reload to take effect.</li>
+                <li>Sample file:
+<pre>
+# TYPE DATABASE USER ADDRESS METHOD
+# IPv4 local connections:
+host  all         all       127.0.0.1/32    ident
+# IPv6 local connections:
+host  all         all       ::1/128         trust
+host  all         all       192.168.54.0/24 md5
+hostssl all       all       0.0.0.0/0       md5
+</pre>
+                </li>
+                <li>For each connection request, postgres checks the file from the top down. When a rule granting/denying access is found, processing stops and the connection is allowed/denied.</li>
+                <li>So put the rules in the right order.</li>
+                <li>Most popular authentication methods are <code>trust</code>, <code>peer</code>, <code>ident</code>, <code>md5</code>, and <code>password</code>.</li>
+                <li>Setting the method to <code>reject</code> results in immediate denial.</li>
+              </ul>
+            </li>
+            <li><strong><code>pg_ident.conf</code></strong>
+              <ul>
+                <li>Maps authenticated OS logins to postgres users.</li>
+                <li>Each auth line in <code>pg_hba.conf</code> can use a different <code>pg_ident.conf</code> file.</li>
+              </ul>
+            </li>
+            <li>With default installation options, the files end up in the main postgres data folder</li>
+            <li>Running this as the pg superuser will give you the file locations on disk:
+<pre>
+SELECT name, setting FROM pg_settings WHERE category = 'File Locations';
+</pre>
+            </li>
+          </ul>
+
+          <h4>Managing Connections</h4>
+          <ul>Steps to cancel a running query:
+            <ol>
+              <li>Retrieve a listing of recent connections and procids:
+<pre>
+SELECT * FROM pg_stat_activity;
+</pre>
+              </li>
+              <li>Cancel active queries for a connection:
+<pre>
+SELECT pg_cancel_backend(procid);
+</pre>
+              </li>
+              <li>Kill the connection:
+<pre>
+SELECT pg_terminate_backend(procid);
+</pre>
+              </li>
+            </ol>
+          </ul>
+
+          <h4>Roles</h4>
+          <ul>
+            <li>Accounts are termed 'roles' in postgres</li>
+            <li>Roles that can log in are 'login roles'</li>
+            <li>Roles that contain other roles are 'group roles'</li>
+            <li>Roles may be designated 'super user'</li>
+            <li><strong>Creating login roles</strong>:
+              <ul>
+                <li>On init, postgres creates a single role with the name <code>postgres</code></li>
+                <li>You can bypass the password setting by mapping an OS root user to the new role</li>
+                <li>To create additional login roles:
+<pre>
+CREATE ROLE alice LOGIN PASSWORD 'alphabet' CREATEDB VALID UNTIL 'infinity';
+CREATE ROLE bob   LOGIN PASSWORD 'bazooka' SUPERUSER VALID UNTIL '2015-1-1 00:00';
+</pre>
+                </li>
+              </ul>
+            </li>
+            <li><strong>Creating Group Roles</strong>:
+              <ul>
+                <li>Group roles don't normally log in (though it's not forbidden)</li>
+                <li>Creating and using group roles:
+<pre>
+CREATE ROLE royalty INHERIT;
+GRANT royalty TO alice;
+GRANT royalty TO bob;
+</pre>
+                </li>
+                <li>Append <code>INHERIT</code> if you want members to inherit rights of the parent role, <code>NOINHERIT</code> if not</li>
+                <li>Superuser rights cannot be inherited.</li>
+                <li>Users in a group role that has superuser rights can assume that role by issuing <code>SET ROLE &lt;rolename&gt;</code></li>
+                <li>Superusers can impersonate any role with <code>SET SESSION AUTHORIZATION &lt;rolename&gt;</code></li>
+              </ul>
+            </li>
+          </ul>
+
+          <h4>Database Creation</h4>
+          <ul>
+            <li>Simplest case: <code>CREATE DATABASE mydb;</code></li>
+            <li>That creates a copy of the <code>template1</code> default database</li>
+            <li><strong>Template Databases</strong>:
+              <ul>
+                <li>Default postgres has <code>template0</code> and <code>template1</code> template databases</li>
+                <li>Never alter <code>template0</code>, it's the base for everything in case you need to rebuild</li>
+                <li>You can choose to model a new database on any existing database:
+<pre>
+CREATE DATABASE my_db TEMPLATE my_template_db;
+</pre>
+                </li>
+                <li>You can also mark a database explicitly as a template, which will lock it from editing/deletion:
+<pre>
+UPDATE pg_database SET datistemplate = TRUE WHERE datname = 'mydb';
+</pre>
+                </li>
+                <li>To edit a template, set that to false, edit, reset to true.</li>
+              </ul>
+            </li>
+            <li><strong>Using Schemas</strong>:
+              <ul>
+                <li>Schemas organize a database into logical groups.</li>
+                <li>Names must be unique within a schema, but not across the database</li>
+                <li>Up to the developer how to organize into schemas</li>
+                <li>You could have one schema per role, with the same tables in each, and the schema name automatically prepended from the <code>search_path</code> db variable.</li>
+                <li>If you named the schema after the role name, and then set the search path in <code>postgresql.conf</code> to:
+<pre>
+search_path = "$user", public;
+</pre>
+                Each user's queries would automatically fall under their own schema without needing to explicitly prepend the schema name.</li>
+                <li>Authors recommend creating schemas to house extensions, since they involve new tables, functions, datatypes, etc., and you don't want those in the <code>public</code> schema namespace.</li>
+                <li>Creating a schema:
+<pre>
+CREATE SCHEMA my_extensions;
+</pre>
+                </li>
+              </ul>
+            </li>
+          </ul>
+
+          <h4>Privileges</h4>
+          <ul>
+            <li>Can be tricky due to fine granularity of permissions in postgres</li>
+            <li>Security can be set down to the object level.</li>
+            <li>Object level privilege examples: <code>SELECT</code>, <code>INSERT</code>, <code>UPDATE</code>, <code>ALTER</code>, <code>EXECUTE</code>, <code>TRUNCATE</code>, all of which can be qualified with <code>WITH GRANT</code>.</li>
+            <li>Setting up additional roles and privileges:
+              <ol>
+                <li>Log in as <code>postgres</code> superuser</li>
+                <li>Create a role that will own the database and can log in:
+<pre>
+CREATE ROLE mydb_admin LOGIN PASSWORD 'somepassword';
+</pre>
+                </li>
+                <li>Create the db and set the owner:
+<pre>
+CREATE DATABASE mydb WITH owner = mydb_admin;
+</pre>
+                </li>
+                <li>Log in as the admin, set up schemas and tables.</li>
+              </ol>
+            </li>
+            <li>Basic syntax for <code>GRANT</code> is <code>GRANT someprivilege TO somerole;</code></li>
+            <li>To grant on all objects, use <code>ALL</code>: <code>GRANT SELECT ON ALL TABLES IN SCHEMA myschema TO username;</code></li>
+            <li>To grant a privilege to all roles, use <code>PUBLIC</code>: <code>GRANT USAGE ON SCHEMA myschema TO PUBLIC;</code></li>
+            <li>You can set default privileges on all database assets inside a schema or database:
+<pre>
+GRANT USAGE ON SCHEMA my_schema TO PUBLIC;
+ALTER DEFAULT PRIVILEGES IN SCHEMA my_schema
+GRANT SELECT, REFERENCES ON TABLES TO PUBLIC;
+
+ALTER DEFAULT PRIVILEGES IN SCHEMA my_schema
+GRANT ALL ON TABLES TO mydb_admin WITH GRANT OPTION;
+
+ALTER DEFAULT PRIVILEGES IN SCHEMA my_schema
+GRANT SELECT, UPDATE ON SEQUENCES TO public;
+
+ALTER DEFAULT PRIVILEGES IN SCHEMA my_schema
+GRANT ALL ON FUNCTIONS TO mydb_admin WITH GRANT OPTION;
+
+ALTER DEFAULT PRIVILEGES IN SCHEMA my_schema
+GRANT USAGE ON TYPES TO PUBLIC;
+</pre>
+            </li>
+            <li>Quirks about privileges:
+              <ul>
+                <li>Being the owner of a db does not mean you have access to all objects, but it does grant you privileges to whatever objects you create, and you can drop the database.</li>
+                <li>If you don't do <code>GRANT USAGE ON SCHEMA</code> or <code>GRANT ALL ON SCHEMA</code>, rights of a role to a table won't actually work.</li>
+              </ul>
+            </li>
+          </ul>
+
+          <h4>Extensions</h4>
+          <ul>
+            <li>Called 'contribs' in previous versions.</li>
+            <li>Not all extensions need to be in all databases--install on an as-needed, per database basis</li>
+            <li>If you want all your databases to have a certain set of extensions, make a template database</li>
+            <li>View installed extensions:
+<pre>
+SELECT name, default_version, installed_version, left(comment,30) As comment
+FROM pg_available_extensions
+WHERE installed_version IS NOT NULL
+ORDER BY name;
+</pre>
+            </li>
+            <li>For details on a single installed extension, from psql: <code>\dx+ fuzzystrmatch</code>, or use the query
+<pre>
+SELECT pg_catalog.pg_describe_object(d.classid, d.objid, 0) AS description
+FROM pg_catalog.pg_depend AS D INNER JOIN pg_catalog.pg_extension AS E
+ON D.refobjid = E.oid
+WHERE
+  D.refclassid = 'pg_catalog.pg_extension'::pg_catalog.regclass AND
+  deptype = 'e' AND E.extname = 'fuzzystrmatch';
+</pre>
+            </li>
+            <li><strong>Installing Extensions</strong>:
+              <ol>
+                <li>Download the extension</li>
+                <li>Install to the server, probably by copying binaries to bin and lib, and the script files to <code>share/extension</code>, which makes the extension available for installing into a database.
+                <li>Install into the database: <code>CREATE EXTENSION fuzzystrmatch;</code></li>
+              </ol>
+            </li>
+            <li>Consider installing to a specific schema: <code>CREATE EXTENSION fuzzystrmatch SCHEMA my_extensions;</code></li>
+            <li>Note that C-based extensions (most of them) need to be installed by a superuser.</li>
+          </ul>
+
+          <h4>Backup and Restore</h4>
+          <ul>
+            <li>Ships with two utilities for it: <code>pg_dump</code> and <code>pg_dumpall</code>, both in the bin folder.</li>
+            <li><code>pg_dump</code> backs up specific databases, <code>pg_dumpall</code> backs up all databases and server globals</li>
+            <li>Creating a compressed, single db backup:
+<pre>
+pg_dump -h localhost -p 5432 -U someuser -F c -b -v -f mydb.backup mydb
+</pre>
+            </li>
+            <li>Read the docs for the utilities for more options.</li>
+          </ul>
+
+          <h4>Managing Disk Storage with Tablespaces</h4>
+          <ul>
+            <li>Tablespaces ascribe logical names to disk locations.</li>
+            <li>Creating a postgres cluster creates two tablespaces: <code>pg_default</code> (all user data) and <code>pg_global</code> (all system data)</li>
+            <li>Both in the same folder as the default data cluster.</li>
+            <li><strong>Creating Tablespaces</strong>:
+              <ul>
+                <li>To create, give a logical name and a path, and make sure the postgres service user has full access to the path:
+<pre>
+CREATE TABLESPACE secondary LOCATION '/usr/data/pgdata94_secondary';
+</pre>
+                </li>
+              </ul>
+            </li>
+            <li><strong>Moving Objects Between Tablespaces</strong>:
+              <ul>
+                <li>Moving all objects in the database to the secondary tablespace:
+<pre>
+ALTER DATABASE mydb SET TABLESPACE secondary;
+</pre>
+                </li>
+                <li>Moving a single table:
+<pre>
+ALTER TABLE mytable SET TABLESPACE secondary;
+</pre>
+                </li>
+                <li><strong>9.4+</strong>: Moving all objects owned by user from default to secondary tablespace:
+<pre>
+ALTER TABLESPACE pg_default MOVE ALL TO secondary;
+</pre>
+                </li>
+              </ul>
+            </li>
+          </ul>
+
+          <h4>Verboten Practices</h4>
+          <ul>
+            <li><strong>Don't Delete PostgreSQL Core System Files and Binaries</strong>:
+              <ul>
+                <li>You can safely purge files in <code>pg_log</code>.</li>
+                <li>You should <strong>never</strong> purge files in <code>pg_xlog</code> (transaction logs) or <code>pg_clog</code> (active commit logs).</li>
+              </ul>
+            </li>
+            <li><strong>Don't give full OS admin rights to the <code>postgres</code> account</strong>:
+              <ul>
+                <li>The <code>postgres</code> user should always be a regular system user, with rights to the data cluster and tablespace folders.</li>
+                <li>Granting unnecessary permissions leaves the system vulnerable to SQL injection.</li>
+              </ul>
+            </li>
+            <li><strong>Don't set <code>shared_buffers</code> too high</strong>:
+              <ul>
+                <li>Check the official docs&mdash;<code>shared_buffers</code> may have OS specific restrictions.</li>
+              </ul>
+            </li>
+            <li><strong>Don't try to start PostgreSQL on a port already in use</strong>:
+              <ul>
+                <li>Can happen if you've already started the service, or it's trying to use some other service's port.</li>
+                <li>Can also happen if postgres had a bad shutdown and there's an orphan <code>postgresql.pid</code> file in the data folder. Delete it and restart.</li>
+                <li>Or if you've got an orphaned PostgreSQL process&mdash;kill and restart.</li>
+              </ul>
+            </li>
+          </ul>  
+        </section><!-- /chapter-02 -->
+
+        <section class="chapter" id="chapter-03">
+          <header>
+            <h3>Chapter 3: <code>psql</code></h3>
+          </header>
+
+          <ul>
+            <li><code>psql</code> is the default CLI admin client for postgres</li>
+            <li>You can set env vars for it: <code>PGHOST</code>, <code>PGPORT</code>, <code>PGUSER</code>, <code>PGPASSWORD</code>.</li>
+          </ul>
+
+          <h4>Interactive <code>psql</code></h4>
+          <ul>
+            <li>You can get general help with <code>\?</code>.</li>
+            <li>You can get specific help with <code>\h</code>, as in <code>\h CREATE TABLE</code>.</li>
+          </ul>
+
+          <h4>Non-Interactive <code>psql</code></h4>
+          <ul>
+            <li>You can pass in scripts made of a mix of SQL and <code>psql</code> commands.</li>
+            <li>To execute a file, use <code>-f</code>: <code>#&gt; psql -f some_script_file</code></li>
+            <li>Passing SQL from the command line with <code>-c</code>: <code>#&gt; psql -d pg_book -c "DROP TABLE IF EXISTS dross; CREATE SCHEMA staging;"</code></li>
+            <li>Example of a script file with <code>psql</code> interactive commands mixed in:
+<pre>
+\a                              &larr; <mark>Removes extra breaking elements normally inserted</mark>
+\t                              &larr; <mark>Removes headers</mark>
+\g create_script.sql            &larr; <mark>Forces output to redirect to file</mark>
+SELECT 'CREATE TABLE staging.factfinder_import(
+  geo_id varchar(255),
+  geo_id2 varchar(255),
+  geo_display varchar(255),
+  '|| array_to_string(array_agg('s' || lpad(i::text,2,'0') || ' varchar(255), s' || lpad(i::text,2,'0') || '_perc varchar(255) ' ), ',') || ');'
+FROM generate_series(1,51) As i;
+\o                              &larr; <mark>Stops redirection of results to file</mark>
+\i create_script.sql            &larr; <mark>Executes generated script</mark>
+</pre>
+            </li>
+          </ul>
+
+          <h4>Session Configurations</h4>
+          <ul>
+            <li>Personal settings come from <code>.psqlrc</code></li>
+            <li>Example file:
+<pre>
+\pset null 'NULL'
+\encoding latin1
+\set PROMPT1 '%n@%M:%&gt;%x %/# '
+\set PROMPT2 ''
+\timing on
+\set qstats91 'SELECT usename, datname, substring(current_query,1,100) || ''...'' As query
+ FROM pg_stat_activity WHERE current_query != ''&lt;&lt;IDLE&gt;&gt;'';'
+\set qstats92 'SELECT usename, datname, left(query,100) || ''...'' As query
+ FRROM pg_stat_activity WHERE state != ''idle'' ;'
+\pset pager always
+</pre>
+            </li>
+            <li>To start without reading the rc file, use <code>-X</code></li>
+            <li><strong>(9.2+)</strong>: env vars <code>PSQL_HISTORY</code> (name of history file) and <code>PSQLRC</code> (name of startup file) can be set</li>
+            <li>If you want to add query execution time to output, use <code>\timing on</code></li>
+            <li><code>AUTOCOMMIT</code> is on by default, toggle with <code>\set AUTOCOMMIT off</code></li>
+            <li>If <code>AUTOCOMMIT</code> is off, rollbacks look like:
+<pre>
+UPDATE census.facts SET short_name = 'this is a mistake';
+ROLLBACK;
+</pre>
+            </li>
+            <li><code>\set</code> lets you create user defined shortcuts: <code>\set eav 'EXPLAIN ANALYZE VERBOSE'</code>, used with <code>:eav SELECT ...</code></li>
+            <li>Up arrow goes through command history. History size controlled by <code>HISTSIZE</code> variable.</li>
+            <li>Unset a var with <code>\unset varname</code></li>
+          </ul>
+
+          <h4><code>psql</code> Gems</h4>
+          <ul>
+            <li>Break out to shell command with <code>\!</code></li>
+            <li><strong>(9.3+)</strong>: <code>\watch</code> runs an SQL statement in a loop every <code>SEC</code> seconds, watches the output. Example of monitoring queries that haven't completed:
+<pre>
+SELECT datname, waiting, query
+  FROM pg_stat_activity
+  WHERE state = 'active' AND pid != pg_backend_pid(); \watch 10
+</pre>
+            Example of writing to a table every 5 seconds:
+<pre>
+INSERT INTO log_activity SELECT * FROM pg_stat_activity; \watch 5
+</pre>
+            </li>
+            <li>To kill a <code>\watch</code>, use <code>CTRL-X CTRL-C</code></li>
+            <li>Some <code>psql</code> commands can give you lists of objects with details. List of tables in the pg_catalog schema that start with pg_t, along with their size: <code>\dt+ pg_catalog.pg_t*</code></li>
+            <li>Details on a single object: <code>\d+ pg_ts_dict</code></li>
+          </ul>
+
+          <h4>Importing and Exporting Data</h4>
+          <ul>
+            <li><code>\copy</code> lets you import from/export to file</li>
+            <li>Default delimiter is tab, rows separated with newlines</li>
+            <li>Before import, you have to create a target table with corresponding columns and data types</li>
+            <li>Interactive import example:
+<pre>
+\connect postgresql_book
+\cd /postgresql_book/ch03
+\copy staging.factfinder_import FROM somefile.csv CSV
+</pre>
+            </li>
+            <li>Non-standard delimiter example, replacing nulls with empty string:
+<pre>
+\copy sometable FROM somefile.txt DELIMITER '|' NULL As '';
+</pre>
+            </li>
+            <li>Finer grained import/export can be done with <code>pgloader</code></li>
+            <li>Export example:
+<pre>
+\connect postgresql_book
+\copy (SELECT * FROM sometable) TO '/test.tab' WITH DELIMITER E'\t' CSV HEADER
+</pre>
+            </li>
+          </ul>
+
+          <h4>Basic Reporting</h4>
+          <ul>
+            <li>Example of generating HTML table as output:
+<pre>
+psql -d postgresql_book -H \
+  -c "SELECT category, count(*) As num_per_cat \
+  FROM pg_settings WHERE category LIKE '%Query%'
+  GROUP BY category ORDER BY category;" -o test.html
+</pre>
+            </li>
+            <li>You can compose entire HTML documents as output by adding wrapper tags with <code>\qecho '&lt;html&gt;...'</code></li>
+          </ul>
+        </section><!-- /chapter-03 -->
+
+        <section class="chapter" id="chapter-04">
+          <header>
+            <h3>Chapter 4: Using <code>pgAdmin</code></h3>
+          </header>
+          <ul>
+            <li>Meh, we don't need a GUI right now.</li>
+          </ul>
+        </section><!-- /chapter-04 -->
+
+        <section class="chapter" id="chapter-05">
+          <header>
+            <h3>Chapter 5: Data Types</h3>
+          </header>
+          <ul>
+            <li>Postgres has basic types, advanced types, and custom types</li>
+            <li>Every data type has functions and operators.</li>
+            <li>Operators are symbol aliases for functions that take arguments.</li>
+          </ul>
+
+          <h4>Numerics</h4>
+          <ul>
+            <li>Postgres has integers, decimals, floats. Chapter wants to talk about 'serial data types'</li>
+            <li><strong>Serials</strong>:
+              <ul>
+                <li><code>serial</code> and <code>bigserial</code> are autoincrementing integers often used as primary keys where a natural key isn't present</li>
+                <li>Specifying a column as <code>serial</code> during table create will create an integer column, then create a sequence object named <code>table_name_column_name_seq</code> in the same schema as the table</li>
+                <li>You can inspect and edit the sequence as a discrete object with <code>ALTER SEQUENCE</code></li>
+                <li>You can create them separate from tables with <code>CREATE SEQUENCE</code></li>
+              </ul>
+            </li>
+            <li><strong>Generate Series Function</strong>:
+              <ul>
+                <li>The function <code>generate_series()</code> mimics a <code>for</code> loop in SQL</li>
+                <li>Example of stepping by 13:
+<pre>
+SELECT x FROM generate_series(1,51,13) As x;
+
+x
+----
+1
+14
+27
+40
+</pre>
+                </li>
+              </ul>
+            </li>
+          </ul>
+
+          <h4>Characters and Strings</h4>
+          <ul>
+            <li>Three primitive character types: <code>char</code> (fixed length), <code>varchar</code> (variable length, shorter than <code>text</code>), <code>text</code> (long, variable length)</li>
+            <li><strong>Common String Functions</strong>: <code>lpad</code>, <code>rpad</code>, <code>rtrim</code>, <code>ltrim</code>, <code>trim</code>, <code>btrim</code>, <code>substring</code>, <code>||</code> (concatenate).</li>
+            <li><strong>Splitting into arrays, tables, substrings:</strong> <code>split_part()</code> gets an element of a delimited string, <code>string_to_array()</code> splits on a delimiter, wrapping that with <code>unnest()</code> will expand the returned array into a set of rows:
+<pre>
+SELECT unnest(string_to_array('abc.123.z45', '.')) As x;
+</pre>
+            </li>
+            <li><strong>Regex:</strong> <code>regexp_replace()</code> will do regex pattern replacements. Note that a string prefaced with <code>E</code> is a pattern.</li>
+            <li>Regexes can also be used with the <code>~</code> (<code>SIMILAR TO</code>) operator: <code>... WHERE description ~ E'[(]{0,1}[0-9]]'</code></li>
+          </ul>
+
+          <h4>Temporals</h4>
+          <ul>
+            <li>Postgres has support for dates, times, time zones, intervals, and some range types.</li>
+            <li>All the types:
+              <ul>
+                <li><strong><code>date</code></strong>: month, day, year</li>
+                <li><strong><code>time</code> or <code>time without time zone</code></strong>: hours, minutes, seconds</li>
+                <li><strong><code>timestamp</code></strong>: date + time, no time zone</li>
+                <li><strong><code>timestamptz</code></strong>: UTC <code>timestamp</code> with a time zone</li>
+                <li><strong><code>timetz</code></strong>: UTC <code>time</code> with a time zone</li>
+                <li><strong><code>interval</code></strong>: during in hours, days, months, minutes, etc.</li>
+                <li><strong><code>tsrange</code></strong>: (9.2+), lets you define open and closed ranges of timestamp (no timezone)</li>
+                <li><strong><code>tstzrange</code></strong>: (9.2+), <code>tsrange</code> with time zone</li>
+                <li><strong><code>daterange</code></strong>: (9.2+), open and closed ranges of dates</li>
+              </ul>
+            </li>
+            <li><strong>Datetime operators and functions</strong>:
+<pre>
+SELECT '2012-02-10 11:00 PM'::timestamp + interval '1 hour';
+SELECT '23 hours 20 minutes'::interval + '1 hour'::interval;
+
+SELECT '2012-02-10 11:00 PM'::timestamptz - interval '1 hour';
+
+SELECT ('2012-10-25 10:00 AM'::timestamp, '2012-10-25 2:00 PM'::timestamp)
+        OVERLAPS
+       ('2012-10-25 11:00 AM'::timetsamp, '2012-10-26 2:00 PM'::timestamp) As x;
+
+SELECT (dt - interval '1 day')::date As eom
+FROM generate_series('2/1/2012', '6/30/2012', interval '1 month') As dt;
+
+SELECT dt, date_part('hour', dt) As mh
+FROM generate_series('2012-03-11 12:30 AM', '2012-03-11 3:00 AM', interval '15 minutes') As dt;
+</pre>
+            </li>
+          </ul>  
+
+          <h4>Arrays</h4>
+          <ul>
+            <li>Every data type has an accompanying array type.</li>
+            <li>Eg, <code>integer</code> has an <code>integer[]</code> array type</li>
+            <li>Array constructor: <code>SELECT ARRAY[2001,2002,2003] As yrs;</code></li>
+            <li>Array constructed from query output: <code>SELECT array(SELECT ...);</code></li>
+            <li>Casting a string literal of an array to an array type: <code>SELECT '{Alex,Sonia'::text[];</code></li>
+            <li>Converting to array from delimited string: <code>SELECT string_to_array('ca.ma.tx', '.');</code></li>
+            <li>Converting a set of any data type to array:
+<pre>
+SELECT array_agg(log_ts ORDER BY log_ts) As x
+FROM logs
+WHERE log_ts BETWEEN '2011-01-01'::timestamptz AND '2011-01-15'::timestamptz;
+</pre>
+            </li>
+            <li>Referencing array element by index (<strong>which starts at 1</strong>): <code>SELECT myarray[1];</code>.</li>
+            <li>Referencing an out of bounds index returns <code>NULL</code></li>
+            <li><code>array_upper(myarray, 1)</code> gets the upper bound of the array</li>
+            <li>You can slice arrays with <code>arrayname[start:end]</code> which returns a new array</li>
+            <li>You can convert array entries to rows with <code>unnest()</code></li>
+          </ul>
+
+          <h4>Range Types (9.2+)</h4>
+          <ul>
+            <li>Replace the need for two separate fields to represent a range.</li>
+            <li>Supports open and closed bounds</li>
+            <li>Examples:
+              <ul>
+                <li><code>(-2,2] = -1, 0, 1, 2</code></li>
+                <li><code>(-2,2) = -1, 0, 1</code></li>
+                <li><code>[-2,2] = -2, -1, 0, 1, 2</code></li>
+              </ul>
+            </li>
+            <li>All built in range types:
+              <ul>
+                <li><strong><code>int4range</code>, <code>int8range</code></strong>: integer ranges, discrete</li>
+                <li><strong><code>numrange</code></strong>: continuous range of decimals, floats, or doubles</li>
+                <li><strong><code>daterange</code></strong>: discrete range of calendar dates, no timezones</li>
+                <li><strong><code>tsrange</code>, <code>tstzrange</code></strong>: continuous timestamp ranges</li>
+              </ul>
+            </li>
+            <li>Boundaries:
+              <ul>
+                <li>Numeric ranges, if either endpoint is blank it becomes <code>null</code>.</li>
+                <li>In general you're bound by the range for the datatype.</li>
+                <li>For temporal ranges, bounds are <code>-infinity</code> and <code>infinity</code></li>
+              </ul>
+            </li>
+            <li>You can create custom ranges, both discrete and continuous.</li>
+            <li>Ranges are composed of elements of the same type, bounded by <code>[ ] ( )</code></li>
+            <li>Ranges can be defined using constructor range functions:
+<pre>
+SELECT daterange('2013-01-05', 'infinity', '[]');
+</pre>
+            </li>
+            <li>Defining a table with ranges:
+<pre>
+CREATE TABLE employment (
+  id serial PRIMARY KEY,
+  employee varchar(20),
+  period daterange);
+
+CREATE INDEX idx_employment_period ON employment USING gist (period);
+INSERT INTO employment (employee, period)
+VALUES
+  ('Alex', '[2012-04-24, infinity)'::daterange);
+</pre>
+            </li>
+            <li>Range operators are mostly <code>&amp;&amp;</code> (overlap) and <code>@&gt;</code> (contains)</li>
+          </ul>
+
+
+          <h4>JSON</h4>
+          <ul>
+            <li>In 9.2+, JSON is a built in data type</li>
+            <li>Has its own operators and functions</li>
+            <li>Defining a json column:
+<pre>
+CREATE TABLE families_j (id serial PRIMARY KEY, profile json);
+</pre>
+            </li>
+            <li>Postgres will validate json on insert</li>
+            <li>In 9.3+ you get functions for inspecting JSON data, like <code>json_extract_path</code>, <code>json_array_elements</code>, and <code>json_extract_path_text</code></li>
+            <li>You can convert data to JSON for output with functions like <code>row_to_json</code></li>
+            <li>In 9.4+ you get the <code>jsonb</code> type, which is binary json.</li>
+          </ul>
+
+          <h4>XML</h4>
+          <ul>
+            <li>Has no direct index support, unlike jsonb in 9.4+</li>
+            <li>Postgres will do syntax checks on insert</li>
+            <li>XML is not validated, just syntax checked</li>
+            <li>The <code>xpath</code> function lets you query XML column data</li>
+          </ul>
+
+          <h4>Custom and Composite Data Types</h4>
+          <ul>
+            <li>All postgres tables are technically custom types</li>
+            <li>Every custom type has an associated array type</li>
+            <li>You can make a column in one table have the type of another table's custom type:
+<pre>
+CREATE TABLE chickens (id integer PRIMARY KEY);
+CREATE TABLE ducks (id integer PRIMARY KEY, chickens chickens[]);
+CREATE TABLE turkeys (id integer PRIMARY KEY, ducks ducks[]);
+
+INSERT INTO ducks VALUES (1, ARRAY[ROW(1)::chickens, ROW(1)::chickens]);
+INSERT INTO turkeys VALUES (1, array(SELECT d FROM ducks d));
+</pre>
+            </li>
+            <li>Postgres tracks dependencies created like this, and you can't drop a dependency without specifying <code>CASCADE</code> or first dropping the dependent columns.</li>
+            <li>Constructing and using a custom type:
+<pre>
+CREATE TYPE complex_number AS (r double precision, i double precision);
+CREATE TABLE circuits (circuit_id serial PRIMARY KEY, ac_volt complex_number);
+SELECT circuit_id, (ac_volt).* FROM circuits;
+</pre>
+            </li>
+            <li>Creating a function for the complex number type:
+<pre>
+CREATE OR REPLACE FUNCTION add(complex_number, complex_number
+RETURNS complex_number AS
+$$
+  SELECT
+    ( (COALESCE(($1).r,0) + COALESCE(($2).r,0)),
+      (COALESCE(($1.i,0) + COALESCE(($2).i,0) )::complex_number;
+$$
+language sql;
+</pre>
+            </li>
+            <li>Creating a symbolic operator to wrap that function:
+<pre>
+CREATE OPERATOR +(
+  PROCEDURE = add,
+  LEFTARG = complex_number,
+  RIGHTARG = complex_number,
+  COMMUTATOR = +);
+</pre>
+            </li>
+          </ul>
+        </section><!-- /chapter-05 -->
+
+        <section class="chapter" id="chapter-06">
+          <header>
+            <h3>Chapter 6: Tables, Constraints, and Indexes</h3>
+          </header>
+          <ul>
+            <li>Constraints enforce relationships between tables</li>
+            <li>Indexes distinguish tables from heaps</li>
+          </ul>
+
+          <h4>Tables</h4>
+          <ul>
+            <li>Postgres has the following table types: ordinary, temporary, unlogged, inherited, typed, and foreign</li>
+            <li>Creating a basic table:
+<pre>
+CREATE TABLE logs (
+  log_id serial PRIMARY KEY,
+  user_name varchar(50),
+  description text,
+  log_ts timestamp with time zone NOT NULL DEFAULT current_timestamp);
+CREATE INDEX idx_logs_log_ts ON logs USING btree (log_ts);
+</pre>
+            </li>
+            <li>You can make a table inherit from another table. The inheriting table will have its own columns plus all columns of the parent:
+<pre>
+CREATE TABLE logs_2011 (PRIMARY KEY(log_id)) INHERITS (logs);
+CREATE INDEX idx_logs_2011_log_ts ON logs USING btree(log_ts);
+ALTER TABLE logs_2011 ADD CONSTRAINT chk_y2011
+  CHECK (log_ts &gt;= '2011-1-1'::timestamptz
+    AND log_ts &lt; '2012-1-1'::timestamptz);
+</pre>
+            </li>
+            <li>Unlogged tables are for ephemeral data that could be rebuilt after a disk failure, or that doesn't need to be restored after a crash. Sacrifices redundancy to gain speed. These tables are not part of any write-ahead logs, and are wiped clean at power loss. Example:
+<pre>
+CREATE UNLOGGED TABLE web_sessions (
+  session_id text PRIMARY KEY,
+  add_ts timestamptz,
+  upd_ts timestamptz,
+  session_state xml);
+</pre>
+            </li>
+            <li>In 9.0+ you can use a composite data type as a template for creating tables:
+<pre>
+CREATE TYPE basic_user AS (email varchar(50), pwd varchar(10));
+CREATE TABLE super_users OF basic_user (CONSTRAINT pk_su PRIMARY KEY (email));
+</pre>
+            </li>
+          </ul>
+
+          <h4>Constraints</h4>
+          <ul>
+            <li><strong>Foreign Key Constraints</strong>:
+              <ul>
+                <li>You can specify cascade update and delete rules</li>
+                <li>Building foreign key constraints and covering indexes:
+<pre>
+set search_path=census, public;
+ALTER TABLE facts ADD CONSTRAINT fk_facts_1 FOREIGN KEY (fact_type_id)
+REFERENCES lu_fact_types (fact_type_id)
+ON UPDATE CASCADE ON DELETE RESTRICT;
+CREATE INDEX fki_facts_1 ON facts (fact_type_id);
+</pre>
+                </li>
+              </ul>
+            </li>
+            <li>Enforcing uniqueness on a non-primary key column:
+<pre>
+ALTER TABLE logs_2011 ADD CONSTRAINT uq UNIQUE (user_name, log_ts);
+</pre>
+            </li>
+            <li>Check constraints have to be met for a field or set of fields:
+<pre>
+ALTER TABLE logs ADD CONSTRAINT chk CHECK (user_name = lower(user_name));
+</pre>
+            </li>
+            <li>Exclusion constraints let you use additional operators to enforce uniqueness that can't be satisfied by the equality operator:
+<pre>
+CREATE TABLE schedules(id serial PRIMARY KEY, room smallint, time_slot tstzrange);
+ALTER TABLE schedules ADD CONSTRAINT ex_schedules
+EXCLUDE using gist (room WITH =, time_slot WITH &amp;&amp;);
+</pre>
+            </li>
+          </ul>
+
+          <h4>Indexes</h4>          
+          <ul>
+            <li>Index names must be unique within a given schema.</li>
+            <li>Types of stock indexes:
+              <ul>
+                <li><strong>B-Tree</strong>: Default index type, only index type for primary and unique keys</li>
+                <li><strong>GiST</strong>: Generalized Search Tree, optimized for full text search, spatial data, scientific data, unstructured data, and hierarchical data. Can't be used to enforce uniqueness.</li>
+                <li><strong>GIN</strong>: Generalized Inverted Index, geared towards full text search and the <code>jsonb</code> datatype. Descendent of GiST, not good for indexing very large objects.</li>
+                <li><strong>SP-GiST</strong>: Space-Partitioning Trees Generalized Search Tree (9.2+), faster than GiST for some kinds of data distribution like geometric data and range types.</li>
+                <li><strong>hash</strong>: earlier popular index type, mostly superceded by GIN and GiST. Can't be used in streaming replication. Largely a legacy type.</li>
+                <li><strong>B-Tree-GiST/B-Tree-GIN</strong>: Available as extensions. Support specialized operators of GiST and GIN, but with indexability of the equality operator found in a B-Tree.</li>
+              </ul>
+            </li>
+            <li>There's a bit here on Operator Classes, but it's esoteric and I'm tired.</li>
+            <li><strong>Functional Indexes</strong>: You can add indexes to functions of columns:
+<pre>
+CREATE INDEX fidx ON featnames_short
+ USING btree (upper(fullname) varchar_pattern_ops);
+</pre>
+            </li>
+            <li><strong>Partial Indexes</strong>: Also called a 'filtered index', covers only rows fitting a WHERE condition:
+<pre>
+CREATE TABLE subscribers (
+  id serial PRIMARY KEY,
+  name varchar(50) NOT NULL, type varchar(50),
+  is_active boolean);
+CREATE UNIQUE index uq ON subscribers USING btree(lower(name)) WHERE is_active;
+</pre>
+            </li>
+            <li>Note that functions used in index WHERE conditions must be immutable, so you can't use time functions like CURRENT_DATE or data from other tables.</li>
+            <li><strong>Multicolumn Indexes</strong>:
+<pre>
+CREATE INDEX idx ON subscribers USING btree (type, upper(name) varchar_pattern_ops);
+</pre>
+            </li>
+          </ul>
+        </section><!-- /chapter-06 -->
+
+        <section class="chapter" id="chapter-07">
+          <header>
+            <h3>Chapter 7: SQL: The PostgreSQL Way</h3>
+          </header>
+          <ul>
+            <li>Postgres has good ANSI SQL compliance.</li>
+            <li>Chapter covers postgres specific additions and quirks</li>
+          </ul>
+
+          <h4>Views</h4>
+          <ul>
+            <li>Views are saved queries that act like tables.</li>
+            <li>9.3 introduced automatically updateable views--you can issue UPDATEs against views directly if they are from a single table and the primary key is an output column.</li>
+            <li>9.3 also introduced 'materialized views', which will requery data only when the REFRESH command is issued.</li>
+            <li>Creating a view using a single table:
+<pre>
+CREATE VIEW census.vw_facts_2010 AS
+SELECT fact_type_id, val, yr FROM census.facts WHERE yr = 2010;
+</pre>
+            </li>
+            <li>Views with underlying JOINs can't be updated via UPDATE, but can via triggers.</li>
+            <li>Creating an INSTEAD OF trigger to update a multi-table view:
+<pre>
+CREATE OR REPLACE VIEW census.vw_facts AS
+SELECT y.fact_type_id, y.category, y.fact_subcats, y.short_name,
+  x.tract_id, x.yr, x.val, x.perc
+FROM census.facts As x INNER JOIN census.lu_fact_types As y
+ON x.fact_type_id = y.fact_type_id;
+
+CREATE OR REPLACE FUNCTION census.trig_vw_facts_ins_upd_del()
+RETURNS trigger AS
+$$
+BEGIN
+  IF (TG_OP = 'DELETE') THEN
+    DELETE FROM census.facts AS f
+    WHERE f.tract_id = OLD.tract_id AND f.yr = OLD.yr
+    AND f.fact_type_id = OLD.fact_type_id;
+    RETURN OLD;
+  END IF;
+  IF (TG_OP = 'INSERT') THEN
+    INSERT INTO census.facts(tract_id, yr, fact_type_id, val, perc)
+    SELECT NEW.tract_id, NEW.yr, NEW.fact_type_id, NEW.val, NEW.perc;
+    RETURN NEW;
+  END IF;
+  IF (TG_OP = 'UPDATE') THEN
+    IF ROW(OLD.fact_type_id, OLD.tract_id, OLD.yr, OLD.val, OLD.perc)
+    != ROW(NEW.fact_type_id, NEW.tract_id, NEW.yr, NEW.val, NEW.perc) THEN
+      UPDATE census.facts AS f
+      SET tract_id = NEW.tract_id,
+        yr = NEW.yr,
+        fact_type_id = NEW.fact_type_id,
+        val = NEW.val,
+        perc = NEW.perc
+      WHERE f.tract_id = OLD.tract_id AND f.yr = OLD.yr
+        AND f.fact_type_id = OLD.fact_type_id;
+      RETURN NEW;
+    ELSE
+      RETURN NULL;
+    END IF;
+  END IF;
+END;
+$$
+LANGUAGE plpgsql VOLATILE;
+
+CREATE TRIGGER trip_01_vw_facts_ins_upd_del
+INSTEAD OF INSERT OR UPDATE OR DELETE ON census.vw_facts
+FOR EACH ROW EXECUTE PROCEDURE census.trig_vw_facts_ins_upd_del();
+</pre>
+            </li>
+            <li>Creating a materialized view:
+<pre>
+CREATE MATERIALIZED VIEW census.vw_facts_2010_materialized AS
+SELECT fact_type_id, val, yr
+FROM census.facts
+WHERE yr = 2010
+ORDER BY 1;
+
+CREATE UNIQUE INDEX ix ON census.vw_facts_2010_materialized(tract_id, fact_type_id, yr);
+</pre>
+            <li>You can't use CREATE OR REPLACE to edit an existing materialized view.</li>
+            <li>To rebuild the materialized view's cache, you must run REFRESH MATERIALIZED VIEW.</li>
+          </ul>
+
+          <h4>Window Functions</h4>
+          <ul>
+            <li>A window function can see and use data beyond the current row.</li>
+            <li>They're intended to be a shorthand for joins and subqueries.</li>
+            <li>Example of an aggregation with no GROUP BY, via the OVER clause:
+<pre>
+SELECT tract_id, val, AVG(val) OVER () as val_avg
+FROM census.facts WHERE fact_type_id = 86;
+</pre>
+            </li>
+            <li>Setting the window into separate panes with PARTITION BY clause:
+<pre>
+SELECT tract_id, val, AVG(val) OVER (PARTITION BY left(tract_id,5)) As val_avg_count
+FROM census.facts WHERE fact_type_id = 86 ORDER BY tract_id;
+</pre>
+            This will partition by the first five digits of tract id, do avg by that.
+            </li>
+            <li>Providing an ORDER BY in the OVER clause. From the book: <q>The best way to think about this is that all the rows in the window will be ordered as indicated by ORDER BY, and the window function will consider only rows in the range from the first row in the ordered list to the current row in the ordered list. The classic example submits results of the OVER() clause to the ROW_NUMBER() function, which is found in all databases supporting window functions. It sequentially numbers rows based on some ordering and or partition.</q>
+<pre>
+SELECT ROW_NUMBER() OVER(ORDER BY tract_name) As rnum, tract_name
+FROM census.lu_tracts ORDER BY rnum LIMIT 4;
+</pre>
+            </li>
+            <li>Combining ORDER BY with PARTITION BY to restart ordering for each partition:
+<pre>
+SELECT tract_id, val,
+  AVG(val) OVER (PARTITION BY left(tract_id,5) ORDER BY val) As avg_county_ordered
+FROM census.facts
+WHERE fact_type_id = 86 ORDER BY left(tract_id,5), val;
+</pre>
+            </li>
+            <li>You can also do 'window naming', which is <q>useful if you have the same window for each of your window columns</q>:
+<pre>
+SELECT *
+FROM (SELECT ROW_NUMBER() OVER wt As rnum,
+        substring(tract_id,1,5) As county_code, tract_id,
+        LAG(tract_id,2) OVER wt As tract_2_before,
+        LEAD(tract_id) OVER wt As tract_after
+      FROM census.lu_tracts
+      WINDOW wt AS (PARTITION BY substring(tract_id,1,5) ORDER BY tract_id)
+     ) As foo
+WHERE rnum BETWEEN 2 and 3 AND county_code IN('25007','25025')
+ORDER BY county_code, rnum;
+</pre>
+            </li>
+          </ul>
+
+          <h4>Common Table Expressions</h4>
+          <ul>
+            <li><q>Common table expressions (CTE) allow you to define a query that can be reused in a larger query.</q></li>
+            <li>Three different ways to use CTEs:
+              <ul>
+                <li><strong>Standard, non-recursive, non-writable CTE</strong>: used to make SQL more readable or encourage the query planner to materialize an expensive subresult for better performance.</li>
+                <li><strong>Writeable CTE</strong>: extension of standard with UPDATE and INSERT. Common use is to delete rows and return the deleted rows.</li>
+                <li><strong>Recursive CTE</strong>: Rows returned by the CTE vary during the execution of the query. You can have a CTE that is both updateable and recursive.</li>
+              </ul>
+            </li>
+            <li>A basic CTE:
+<pre>
+WITH cty_with_tot_tracts AS (
+  SELECT tract_id, substring(tract_id,1,5) As county_code,
+  COUNT(*) OVER(PARTITION BY substring(tract_id,1,5)) As cnt_tracts
+  FROM census.lu_tracts
+)
+SELECT MAX(tract_id) As last_tract, county_code, cnt_tracts
+FROM cty_with_tot_tracts
+WHERE cnt_tracts &gt; 100
+GROUP BY county_code, cnt_tracts;
+</pre>
+              The CTE here is <code>cty_with_tot_tracts</code>, which acts like a view but ceases to exist when the enclosing statement ends.
+            </li>
+            <li>You can put multiple table expressions in a WITH clause, though each must be separated by a comma. CTEs defined later can call CTEs defined earlier, but not vice versa:
+<pre>
+WITH cte_01 AS (SELECT ...), cte_02 AS (SELECT ... FROM cte_01 ...)
+SELECT ... FROM cte_01 INNER JOIN cte_02 ON ...;
+</pre>
+            </li>
+            <li>Creating a writeable CTE:
+<pre>
+WITH t1 AS (DELETE FROM ONLY logs_2011
+  WHERE log_ts &lt; '2011-03-01' RETURNING *)
+INSERT INTO logs_2011_01_02 SELECT * FROM t1;
+</pre>
+            </li>
+            <li>I'm not going to try to summarize recursive ctes, they're too damn complicated. Read the documentation.</li>
+          </ul>
+
+          <h4>LATERAL (9.3+)</h4>
+          <ul>
+            <li><q>Suppose you perform inner join on two tables or subqueries: The pair participating in the join are independent units and can't use each others columns.</q> This for instance would generate an error because L.year = 2010 is not a field defined in R:
+<pre>
+SELECT * FROM census.facts L              &larr; <mark>GENERATES ERROR</mark>
+INNER JOIN
+  (SELECT * FROM census.lu_fact_types
+   WHERE CASE WHEN L.year = 2010 THEN 'Housing' ELSE category END) R
+  ON L.fact_type_id = R.fact_type_id LIMIT 10;
+</pre>
+            Doing the same with the LATERAL keyword removes the error:
+<pre>
+SELECT * FROM census.facts L
+INNER JOIN
+  <mark>LATERAL</mark> (SELECT * FROM census.lu_fact_types
+   WHERE CASE WHEN L.year = 2010 THEN 'Housing' ELSE category END) R
+  ON L.fact_type_id = R.fact_type_id LIMIT 10;
+</pre>
+            </li>
+            <li><q>LATERAL lets you share fields across two tables in a FROM clause. In the above example, you can achieve the same result set by using correlated queries. There are situations however when you must resort to LATERAL to avoid extremely convoluted sytax.</q></li>
+          </ul>
+
+          <h4>Handy Constructions</h4>
+          <ul>
+            <li>Not all of these are ANSI-compliant.</li>
+            <li>Postgres has a DISTINCT ON clause that acts like DISTINCT, but lets you define what columns to consider distinct, and to assign an order to remaining columns to designate which is preferred:
+<pre>
+SELECT DISTINCT ON(left(tract_id,5)) left(tract_id,5) As county,
+  tract_id, tract_name
+FROM census.lu_tracts ORDER BY county, tract_id LIMIT 5;
+</pre>
+            </li>
+            <li>As in MySQL you can use LIMIT and OFFSET:
+<pre>
+SELECT ... LIMIT 3 OFFSET 2;
+</pre>
+            </li>
+            <li>You can do multi-row inserts with VALUES:
+<pre>
+INSERT INTO <i>tablename</i>(<i>col1</i>,<i>col2</i>,...)
+VALUES (<i>'val1'</i>, <i>'val2'</i>,...),
+(<i>'val1'</i>, <i>'val2'</i>,...),
+(<i>'val1'</i>, <i>'val2'</i>,...);
+</pre>
+            </li>
+            <li>While ANSI sql has CAST for data type conversions, postgres lets you shortcut it with things like <code>'2011-10-11'::date</code>.</li>
+            <li>You can do case insensitive search with ILIKE:
+<pre>
+SELECT ... FROM ... WHERE <i>field</i> ILIKE '%somestring%';
+</pre>
+            </li>
+            <li>Postgres lets set-returning functions appear in the SELECT clause (many systems only allow scalar functions):
+<pre>
+CREATE TABLE interval_periods(i_type interval);
+INSERT INTO interval_periods(i_type) VALUES
+('5 months'), ('132 days'), ('4862 hours');
+
+SELECT i_type, generate_series(
+  '2012-01-01'::date,
+  '2012-12-31'::date,
+  i_type) As dt
+FROM interval_periods;
+</pre>
+            Returns:
+<pre>
+   i_type   |           dt           
+------------+------------------------
+ 5 mons     | 2012-01-01 00:00:00-08
+ 5 mons     | 2012-06-01 00:00:00-07
+ 5 mons     | 2012-11-01 00:00:00-07
+ 132 days   | 2012-01-01 00:00:00-08
+ 132 days   | 2012-05-12 00:00:00-07
+ 132 days   | 2012-09-21 00:00:00-07
+ 4862:00:00 | 2012-01-01 00:00:00-08
+ 4862:00:00 | 2012-07-21 15:00:00-07
+</pre>
+            </li>
+            <li><q>When you query from a table that has child tables, the query drills down into the children, creating a union of all the child records satisfying the query condition. DELETE and UPDATE work the same way [...] Sometimes this is not desirable and you want data to come only from the table you specified[.]</q> If you use the ONLY modifier you get data from only the table specified:
+<pre>
+DELETE FROM ONLY logs_2011
+  WHERE log_ts &lt; '2011-03-01'
+</pre>
+            </li>
+            <li>To delete from one table based on presence in a second set of data (a join, a derived table, etc), you can use the USING clause in a DELETE statement:
+<pre>
+DELETE FROM census.facts
+USING census.lu_fact_types As ft
+WHERE census.facts.fact_type_id = ft.fact_type_id
+AND ft.short_name = 's01';
+</pre>
+            </li>
+            <li>You can return the records affected by an INSERT, UPDATE, or DELETE:
+<pre>
+UPDATE <i>tablename</i>
+SET <i>somefield</i> = '<i>somevalue</i>'
+WHERE <i>otherfield</i> = '<i>othervalue</i>'
+RETURNING *;
+</pre>
+            </li>
+            <li>You can return composite types from a query. The following returns the canonical representation of the custom type object created automatically by postgres when the table is created:
+<pre>
+SELECT X FROM census.lu_fact_types As X LIMIT 2;
+</pre>
+            </li>
+            <li>Outputting the JSON version of an object:
+<pre>
+SELECT array_to_json(array_agg(f)) As ajaxy_cats
+FROM (SELECT MAX(fact_type_id) As max_type, category
+      FROM census.lu_fact_types
+      GROUP BY category) As f;
+
+SELECT json_agg(f) As ajaxy_cats FROM (...) As f;
+</pre>
+            </li>
+            <li>You can write procedural language code on the fly with DO. This does an insert by generating dynamic SQL:
+<pre>
+set search_path=census;
+DROP TABLE IF EXISTS lu_fact_types;
+CREATE TABLE lu_fact_types(fact_type_id serial, category varchar(100)
+  , fact_subcats varchar(255)[], short_name varchar(50)
+  , CONSTRAINT pk_lu_fact_types PRIMARY KEY (fact_type_id));
+
+DO language plpgsql
+$$
+DECLARE var_sql text;
+BEGIN
+  var_sql := string_agg('INSERT INTO lu_fact_types(category, fact_subcats, short_name)
+  SELECT ''Housing''
+    , array_agg(s' || lpad(i::text,2,'0') || ') As fact_subcats
+    , ' || quote_literal('s' || lpad(i::text,2,'0') ) || ' As short_name
+  FROM staging.factfinder_import
+  WHERE s' || lpad(I::text,2,'0') || ' ~ ''^[a-zA-Z]+'' ', ';')
+    FROM generate_series(1,51) As I;
+  EXECUTE var_sql;
+END
+$$;
+</pre>
+            </li>
+          </ul>
+        </section><!-- /chapter-07 -->
+
+      </section>
+    </article>
+  </div><!--/container-->
+  </body>
+</html>
