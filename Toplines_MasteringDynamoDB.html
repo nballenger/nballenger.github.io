@@ -1,0 +1,788 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <title>Notes on Mastering DynamoDB, by Tanmay Deshpande, 2014</title>
+    <link href="./bootstrap/css/bootstrap.min.css" rel="stylesheet">
+  </head>
+  <body>
+    <div class="container">
+    <article id="toplines-restful-web-services">
+      <header>
+      <h1>Notes on Mastering DynamoDB<small>, by Tanmay Deshpande, 2014</small></h1>
+      </header>
+
+      <div class="well"> 
+      <section id="executive-summary">
+        <header>
+          <h2 class="text-center">Executive Summary</h2>
+        </header>
+
+        <p>AWS DynamoDB is a Key-Value NoSQL persistence service backed by solid state drives, and automatically replicated across Amazon Availability Zones. It is 'fully managed,' which means that the user/administrator is not responsible for actively scaling the infrastructure&mdash;though data design decisions can radically impact efficiency and load balancing.</p>
+
+        <p>At the macro level, a DynamoDB instance is made up of <em>Nodes</em> arranged in a <em>Ring</em>, with no centralized controller node. There are however <em>Coordinator Nodes</em> responsible for handling replication balancing, and <em>Seed Nodes</em> which keep track of ring membership and up/down status for individual nodes. The ring scales flexibly via a <em>Gossip Protocol</em> and <em>Hinted Handoff</em>, in which each node is effectively capable of taking messages for temporarily unreachable nodes, and consolidating information correctly as nodes come and go.</p>
+
+        <p>In DynamoDB, <em>Tables</em> are containers for <em>Items</em>, which in turn have <em>Attributes</em> comprised of Key-Value pairs. Tables have no fixed schema, but do require a fixed primary key. Primary keys can be either:
+
+        <ul>
+          <li>a Hash key only, where a uniquely valued column is passed through a hash function to determine which DynamoDB node an Item record will be placed on, <em>OR</em></li>
+          <li>a Hash and Range key, where one (unique) field serves as the hash key, while another serves to distribute data. Range keys may be selected to logically group data onto a single node, such that requests for multiple related records do not have to span nodes.</li>
+        </ul>
+
+        <p>In addition to a required Primary Key, each table can have multiple <em>Secondary Indexes</em>, which either enable search on an attribute within a single partition (<em>Local Secondary Indexes</em>), or across all partitions (<em>Global Secondary Indexes</em>).
+
+        <p>Attributes within DynamoDB can be one of three datatypes:</p>
+        <ul>
+          <li>String &mdash; No size restrictions, though total attribute size should be smaller than 64K (key+value). Supports UTF-8 binary encoding. Query results are ordered via ASCII code. <strong>You cannot store an empty string.</strong></li>
+          <li>Number &mdash; Signed decimal or integer. Supports up to 38 digits of precision; values between 10<sup>-128</sup> to 10<sup>128</sup>. During transport, numbers are serialized as strings.</li>
+          <li>Binary &mdash; Works like BLOBs and CLOBs in a relational database. By default encoded in Base64 before storage; decode with Base64 decoder.</li>
+        </ul>
+
+        <p>In addition, each of the three scalar types can be expanded into a Set type (via brackets). Note that <strong>set types are not arrays</strong>, and items within a set must be unique. You cannot store an empty set.</p>
+
+        <h3>Usage in Python</h3>
+        <p>An Item that might occur in a Table of books:
+<pre>
+{
+  "bookId": "2001",                 &larr; Unique primary key
+  "title": "Mastering DynamoDB",    &larr; String datatype
+  "authors": ["Tanmay Deshpande"],  &larr; String Set
+  "ISBN": "222-2222-2222",
+  "chapters": 10
+}
+</pre>
+
+        <p>The Python SDK is available via the <code>boto</code> library, and some sample operations on tables and items are as follows:</p>
+
+<pre>
+import boto.dynamodb2
+from boto.dynamodb2.fields import HashKey, RangeKey, KeysOnlyIndex, AllIndex
+from boto.dynamodb2.table import Table
+from boto.dynamodb2.types import NUMBER
+
+users = Table.create('users', schema=[
+    HashKey('account_type', data_type=NUMBER),
+    RangeKey('last_name'),
+], throughput={
+    'read': 5,
+    'write': 15,
+}, indexes=[
+    AllIndex('EverythingIndex', parts=[
+        HashKey('account_type', data_type=NUMBER),
+    ])
+])
+
+users.put_item(data={
+    'username': 'johndoe',
+    'first_name': 'John',
+    'last_name': 'Doe',
+})
+
+johndoe = users.get_item(username='johndoe')
+
+print johndoe['first_name']
+
+johndoe['first_name'] = 'Johann'
+
+del johndoe['last_name']
+
+johndoe.save()
+
+johndoe['whatever'] = 'some stuff'
+
+johndoe.save(overwrite=True)
+
+
+with users.batch_write() as batch:
+    batch.put_item(data={
+        'username': 'anotherdoe',
+        'first_name': 'Another',
+        'last_name': 'Doe',
+        'date_joined': int(time.time()),
+    })
+    batch.put_item(data={
+        'username': 'alice',
+        'first_name': 'Alice',
+        'date_joined': int(time.time()),
+    })
+    batch.delete_item(username='jane')
+
+results = users.batch_get(keys=[
+    { 'username': 'johndoe', },
+    { 'username': 'jane', },
+    { 'username': 'fred', },
+])
+
+for res in results:
+    print res['first_name']
+</pre>
+
+        <p>Querying and scanning operations:</p>
+<pre>
+# Examples use this table setup:
+users = Table.create('users', schema=[
+    HashKey('account_type'),
+    RangeKey('last_name'),
+], indexes=[
+    AllIndex('DateJoinedIndex', parts=[
+        HashKey('account_type'),
+        RangeKey('date_joined', data_type=NUMBER),
+    ]),
+])
+
+# Query for last names starting with 'D':
+names_with_d = users.query_2(
+    account_type__eq='standard_user',
+    last_name__beginswith='D'
+)
+
+# Same query, reverse sort with limit
+rev_with_d = users.query_2(
+    account_type__eq='standard_user',
+    last_name__beginswith='D',
+    reverse=True,
+    limit=2
+)
+
+# Query against local secondary:
+recent = users.query_2(
+    account_type__eq='standard_user',
+    date_joined__gte=time.time() - (60 * 60),
+    index='DateJoinedIndex'
+)
+
+# Specifying a max page size to get faster responses
+all_users = users.query_2(
+    account_type__eq='standard_user',
+    date_joined__gte=0,
+    max_page_size=10
+)
+
+# Querying on data not in a key or index. Similar to map reduce:
+owners_with_emails = users.scan(
+    is_owner__eq=1,
+    email__null=False,
+)
+</pre>
+      </section>
+      </div>
+
+      <section id="chapter-summaries">
+        <header>
+          <h2 class="text-center">Chapter Summaries</h2>
+        </header>
+
+        <section class="chapter" id="chapter-01">
+          <header>
+            <h3>Chapter 1: Getting Started</h3>
+          </header>
+
+          <ul>
+            <li>DynamoDB is an AWS product, and:
+              <ul>
+                <li>is a NoSQL database</li>
+                <li>is backed by solid state disks</li>
+                <li>automatically replacates across AWS AZs</li>
+              </ul>
+            </li>
+            <li>Review of NoSQL comes next.</li>
+            <li>DynamoDB is a key-value store.</li>
+          </ul>
+
+          <h4>DynamoDB's history</h4>
+          <ul>
+            <li>Built to host Amazon data at scale</li>
+            <li>In 2007 Amazon put out a research paper on Dynamo</li>
+            <li>Got improved a bunch over time, eventually got added as an AWS service in 2012</li>
+          </ul>
+
+          <h4>What is DynamoDB?</h4>
+          <ul>
+            <li>Book says: <q>DynamoDB is a fully managed, Internet scalable, easily administered, and cost effective NoSQL database.</q></li>
+            <li>Fits into AWS alongside RDS, SimpleDB, and RedShift</li>
+          </ul>
+
+          <h4>Data Model Concepts</h4>
+          <ul>
+            <li>Terms:
+              <ul>
+                <li><strong>Tables</strong> &mdash; No fixed schema. Requirements are a fixed primary key, the datatype of the primary key, an optional secondary index, and the data payload of the record.</li>
+                <li><strong>Items</strong> &mdash; Individual records in a table</li>
+                <li><strong>Attributes</strong> &mdash; Key-value pairs associated with an Item</li>
+                <li><strong>Strongly Consistent Read</strong> &mdash; Reflects all successful writes prior to that read request.</li>
+                <li><strong>Eventually Consistent Read</strong> &mdash; Book doesn't define it here.</li>
+                <li><strong>Read Capacity Unit</strong> &mdash; One strongly consistent read and two eventually consistent reads per second, for an item as large as 4K.</li>
+                <li><strong>Write Capacity Unit</strong> &mdash; One strongly consistent write unit for an item as large as 1K.</li>
+              </ul>
+            </li>
+            <li>Calculations for finding required Capacity Units for a read or write:
+              <ul>
+                <li>Strongly Consistent Read = Number of Item reads per second * Item Size</li>
+                <li>Eventually Consistent Read = Number of Item reads per second * Item Size / 2</li>
+                <li>Writes = Number of Item writes per second * Item Size</li>
+              </ul>
+            </li>
+            <li>When you create and manage tables, you set their read and write capacity units, which allows AWS to provision your tables for the correct level of throughput.</li>
+            <li>If your application exceeds the set capacity units for a Table, you will get back an Exception like <code>ProvisionedThroughputExceededException</code></li>
+            <li>AWS SDK will auto-retry on a provisioned throughput exception, if configured to do so via a <code>ClientConfiguration</code> object.</li>
+            <li>High level Dynamo features:
+              <ul>
+                <li>Distribution is all managed by AWS</li>
+                <li>Data is durable because it's auto-replicated across availability zones</li>
+                <li>No limits on data size, size of reads/writes</li>
+                <li>Follows a 'shared-nothing' architecture</li>
+                <li>Has single-digit millisecond latency for EC2 instance accesses, for an item of &lt;1K</li>
+                <li>CloudWatch can be used to scale the provision throughput</li>
+                <li>Indexes are on primary key by default, but can also be global and secondary for any non-primary key attribute</li>
+              </ul>
+            </li>
+          </ul>
+
+          <h4>How Do I Get Started?</h4>
+          <ul>
+            <li>Walkthrough of using the AWS console to create a db.</li>
+            <li>You can set up a local instance that will be a client-side database that mimics the actual DynamoDB for testing.</li>
+            <li>Steps to use Local:
+              <ol>
+                <li>Download the DynamoDB Local JAR from <a href="http://dynamodb-local.s3-website-us-west-2.amazonaws.com/dynamodb_local_latest" target="_blank">http://dynamodb-local.s3-website-us-west-2.amazonaws.com/dynamodb_local_latest</a></li>
+                <li>Make sure you've got the Java 7 JRE, since the JAR only runs on that</li>
+                <li>Zip will contain a lib folder with third party JARs and the DynamoDBLocal.jar file</li>
+                <li>Run this to start a local instance: <kbd>java -Djava.library.path=. -jar DynamoDBLocal.jar</kbd></li>
+                <li>By default it'll run on port 8000</li>
+                <li>You can specify a port with <kbd>--port 8001</kbd></li>
+                <li>Set the endpoint in your client config to localhost:8000 or whatever you set the port to</li>
+              </ol>
+            </li>
+            <li>Of note about Local:
+              <ul>
+                <li>It ignores credentials you give it</li>
+                <li>Values in the access key and regions are used to create the local db file, which is created in the same folder where you're running Local</li>
+                <li>It ignores settings for provision, so it won't prepare you to handle throughput exceeded exceptions</li>
+                <li>Don't use it in production, because OMG duh I can't even.</li>
+              </ul>
+            </li>
+          </ul>
+        </section><!-- /chapter-01 -->
+
+        <section class="chapter" id="chapter-02">
+          <header>
+            <h3>Chapter 2: Data Models</h3>
+          </header>
+          <ul>
+            <li>Chapter is broken up into Primary Keys, Data Types, and Operations</li>
+            <li>Example of how a 'Book' table might look in DynamoDB:
+<pre>
+{
+  "bookId": "2001",                 &larr; Unique primary key
+  "title": "Mastering DynamoDB",
+  "authors": ["Tanmay Deshpande"],
+  "ISBN": "222-2222-2222",
+  "chapters": 10
+}
+{
+  "bookId": "2002",
+  "title": "AWS DynamoDB Essentials",
+  "authors": ["Albert Alpha", "Barbara Bravo"],
+  "ISBN": "4444-2222-2228"
+}
+</pre>
+            </li>
+          </ul>
+
+          <h4>Primary Key</h4>
+          <ul>
+            <li>Mandatory attribute for each table Item</li>
+            <li>Only auto-indexed attribute</li>
+            <li>Must be unique within a table</li>
+            <li>Two supported types of primary key:
+              <ul>
+                <li>Hash Primary Key &mdash; Dynamo will use a hashed value to look up items, so you have to specify a column that will be unique for all items in a table</li>
+                <li>Hash and Range Primary Key &mdash; A range key can be used in combination with a hash key. Range keys should be chosen to evenly distribute data across partitions.</li>
+              </ul>
+            </li>
+            <li>The Book example above uses bookId as the hash key (because it is unique), and could use a 'yearOfPublication' field as the range key, because it provides even distribution.</li>
+          </ul>
+
+          <h4>Secondary Indexes</h4>
+          <ul>
+            <li>Secondary indexes can be created on attributes other than the primary key</li>
+            <li>Multiple secondary indexes can be created for a table</li>
+            <li>You must specify the hash and optional range key for every new index you create</li>
+            <li>You must create indexes at the time of table creation</li>
+            <li>Indexes cannot be edited or deleted from a table.</li>
+            <li>Two supported types of secondary index:
+              <ul>
+                <li>Local Secondary Index &mdash; These are extensions to the hash and range key attributes. In essence, it creates a separate, secondary range key that can be queried within a single partition (so within a given value of the original range key).</li>
+                <li>Global Secondary Index &mdash; Allow querying across partitions. In this case you must create a new, separate hash and optional range key different from the table hash and range keys.</li>
+              </ul>
+            </li>
+            <li>Important points about local secondaries:
+              <ul>
+                <li>Must have both hash and range keys.</li>
+                <li>Hash key is the same as the table hash key.</li>
+                <li>Queries are limited to a single partition.</li>
+                <li>Local secondary supports both eventual and strong consistency, and you can choose at query time.</li>
+                <li>Queries/writes consume read and write capacity from provisioned throughput for the given table</li>
+                <li>Local secondary has a size limit of 10G on all indexed items per hash key (all indexed items together must be equal or less than 10G for a single hash key)</li>
+              </ul>
+            </li>
+            <li>Important points about global secondaries:
+              <ul>
+                <li>Needs a hash and optional range key.</li>
+                <li>Hash and range keys are different from table hash and range keys.</li>
+                <li>Queries are across all partitions.</li>
+                <li>Book says: <q>The global secondary index eventually supports only consistent reads.</q> What the hell does that mean?</li>
+                <li>No size limit on global secondaries</li>
+              </ul>
+            </li>
+            <li>Choice between secondary index types is really application specific, no clear better choice.</li>
+          </ul>
+
+          <h4>Data Types</h4>
+          <ul>
+            <li>Scalar data types in DynamoDB:
+              <ul>
+                <li>String &mdash; No size restrictions, though total attribute size should be smaller than 64K (key+value). Supports UTF-8 binary encoding. Query results are ordered via ASCII code. <strong>You cannot store an empty string.</strong></li>
+                <li>Number &mdash; Signed decimal or integer. Supports up to 38 digits of precision; values between 10<sup>-128</sup> to 10<sup>128</sup>. During transport, numbers are serialized as strings.</li>
+                <li>Binary &mdash; Works like BLOBs and CLOBs in a relational database. By default encoded in Base64 before storage; decode with Base64 decoder.</li>
+              </ul>
+            </li>
+            <li>Multivalued data types in DynamoDB are sets of the scalar types. Since they're sets and not arrays, values in a set must be unique. Sets are not ordered, and you cannot store an empty set.</li>
+          </ul>
+
+          <h4>Operations on Tables</h4>
+          <ul>
+            <li>To create a table, you need a name, primary key, data types of the primary key, and number of read/write throughput provisioning units.</li>
+            <li>Naming rules are alpha upper and lower, numerals, dash, dot, and underscore: <code>[-._a-zA-Z0-9]+</code></li>
+            <li>Book covers create, update, delete, list tables in Java, .NET, and PHP sdks.</li>
+            <li>Drawing from the boto docs at <a href="http://boto.readthedocs.org/en/latest/dynamodb2_tut.html" target="_blank">http://boto.readthedocs.org/en/latest/dynamodb2_tut.html</a>, here's the python equivalent:
+              <ul>
+                <li><strong>Creating a table:</strong>
+<pre>
+import boto.dynamodb2
+from boto.dynamodb2.fields import HashKey, RangeKey, KeysOnlyIndex, AllIndex
+from boto.dynamodb2.table import Table
+from boto.dynamodb2.types import NUMBER
+
+users = Table.create('users', schema=[
+    HashKey('account_type', data_type=NUMBER),
+    RangeKey('last_name'),
+], throughput={
+    'read': 5,
+    'write': 15,
+}, indexes=[
+    AllIndex('EverythingIndex', parts=[
+        HashKey('account_type', data_type=NUMBER),
+    ])
+],
+# Optionally for custom parameters like keys or region info:
+connection=boto.dynamodb2.connect_to_region('us-east-1'))
+</pre>
+                </li>
+                <li><strong>Using an existing table:</strong>
+<pre>
+# Simple fetch, allows the object to make an additional call
+# for meta info about the table if necessary.
+from boto.dynamodb2.table import Table
+users = Table('users')
+</pre>
+                <hr>
+<pre>
+# Fetch that precludes an additional call, for efficiency reasons
+from boto.dynamodb2.fields import HashKey, RangeKey, AllIndex
+from boto.dynamodb2.table import Table
+from boto.dynamodb2.types import NUMBER
+
+users = Table('users', schema=[
+    HashKey
+</pre>
+                </li>
+                <li><strong>Describe a table:</strong>:
+<pre>
+users.describe()
+</pre>
+                </li>
+                <li><strong>Listing tables:</strong>
+<pre>
+from boto.dynamodb.layer1 import DynamoDBConnection
+
+conn = DynamoDBConnection(...)
+
+tables = conn.list_tables()
+</pre>
+                </li>
+                <li><strong>Deleting a table:</strong>
+<pre>
+users.delete()
+</pre>
+                </li>
+              </ul>
+            </li>
+          </ul>
+
+          <h4>Operations on Items</h4>
+          <ul>
+            <li>Items are collections of attributes, which are strings/numbers/binaries or sets of those things</li>
+            <li>Each attribute is a name and a value, and all items must have a primary key</li>
+            <li>Items can have any number of attributes, but item size cannot exceed 64K</li>
+            <li>You should design your app to use eventually consistent reads wherever possible</li>
+            <li>Three basic types of eventual consistency:
+              <ul>
+                <li>Casual &mdash; you get the data in the state it existed when you queried it</li>
+                <li>Read-your-writes &mdash; A client will always retrieve data at least as new as its own last write</li>
+                <li>Session &mdash; if a session has updated a value, it will always get the most updated value while that session is alive</li>
+              </ul>
+            </li>
+            <li>DynamoDB has conditional writes, in which you can provide conditions that must be met for a write to succeed.</li>
+            <li>Item sizes are calculated by adding all attribute names and their values</li>
+            <li>
+              <ul>
+                <li>Creating a new Item:
+<pre>
+# Using table.put_item:
+from boto.dynamodb2.table import Table
+users = Table('users')
+
+users.put_item(data={
+    'username': 'johndoe',
+    'first_name': 'John',
+    'last_name': 'Doe',
+})
+</pre>
+                <hr>
+<pre>
+# Constructing an Item and calling save():
+from boto.dynamodb2.items import Item
+from boto.dynamodb2.table import Table
+users = Table('users')
+
+johndoe = Item(users, data={
+    'username': 'johndoe',
+    'first_name': 'John',
+    'last_name': 'Doe',
+})
+johndoe.save()
+</pre>
+                </li>
+                <li>Getting an item and accessing data:
+<pre>
+from boto.dynamodb2.table import Table
+users = Table('users')
+
+johndoe = users.get_item(username='johndoe')
+
+print johndoe['first_name']
+
+johndoe['first_name'] = 'Johann'
+
+del johndoe['last_name']
+
+# Save operation required to persist changes
+johndoe.save()
+</pre>
+                </li>
+                <li>Updating an item:
+<pre>
+# Send all data, with expectation nothing has changed since original read.
+# (If that's not true, write will fail)
+johndoe = users.get_item(username='johndoe')
+johndoe['first_name'] = 'Johann'
+johndoe['whatever'] = 'some stuff'
+del johndoe['last_name']
+
+johndoe.save()
+</pre>
+                <hr>
+<pre>
+# Forcing an overwrite:
+[...]
+johndoe.save(overwrite=True)
+</pre>
+                <hr>
+<pre>
+# Partial update, only writes modified fields
+[...]
+johndoe.partial_save()
+</pre>
+                </li>
+                <li>Deleting an Item:
+<pre>
+# Via the item:
+johndoe.delete()
+</pre>
+                <hr>
+<pre>
+# Via the table:
+users = Table('users')
+
+users.delete_item(username='johndoe')
+</pre>
+                </li>
+                <li>Batch writing via a context manager (limit of 25 items per call):
+<pre>
+from boto.dynamodb2.table import Table
+users = Table('users')
+
+with users.batch_write() as batch:
+    batch.put_item(data={
+        'username': 'anotherdoe',
+        'first_name': 'Another',
+        'last_name': 'Doe',
+        'date_joined': int(time.time()),
+    })
+    batch.put_item(data={
+        'username': 'alice',
+        'first_name': 'Alice',
+        'date_joined': int(time.time()),
+    })
+    batch.delete_item(username='jane')
+</pre>
+                Note that the context manager can't read data, and you can't put and delete the same data within a single batch request.
+                </li>
+                <li><strong>Batch get (returns a ResultSet):</strong>
+<pre>
+results = users.batch_get(keys=[
+    { 'username': 'johndoe', },
+    { 'username': 'jane', },
+    { 'username': 'fred', },
+])
+
+for res in results:
+    print res['first_name']
+</pre>
+                </li>
+              </ul>
+            </li>
+          </ul>
+
+          <h4>Query and scan operations</h4>
+          <ul>
+            <li>Data returned from a query or scan is limited to 1M.</li>
+            <li>No matching items will return an empty set.</li>
+            <li>Results are always sorted in the order of the range key value.</li>
+            <li>A scan checks every item in a table, and can be filtered.</li>
+            <li>A query is much more efficient than a scan.</li>
+            <li>Query results can be eventually or (optionally) strongly consistent. Scan results are always eventually consistent.</li>
+            <li>To deal with the 1M limit on results, DynamoDB uses <code>LastEvaluatedKey</code> and <code>ExclusiveStartKey</code>, that let you fetch results in pages. If a query or scan result reaches 1M, you can put the next query by setting <code>ExclusiveStartKey</code> derived from <code>LastEvaluatedKey</code>. At the end of the results, <code>LastEvaluatedKey</code> is null.</li>
+            <li>If you set the <code>count</code> parameter to true in a query or scan, the result is the count of matching rows, not the actual data</li>
+            <li>You can perform a parallel scan rather than a fully sequential one. To do so, you need to give the <code>TotalSegments</code> value, which is the number of workers that should access a table in parallel.</li>  
+            <li>
+              <ul>
+                <li><strong>Querying</strong> (DO NOT USE <code>Table.query</code>, only use <code>Table.query2</code>:
+<pre>
+# Examples use this table setup:
+users = Table.create('users', schema=[
+    HashKey('account_type'),
+    RangeKey('last_name'),
+], indexes=[
+    AllIndex('DateJoinedIndex', parts=[
+        HashKey('account_type'),
+        RangeKey('date_joined', data_type=NUMBER),
+    ]),
+])
+
+# Query for last names starting with 'D':
+names_with_d = users.query_2(
+    account_type__eq='standard_user',
+    last_name__beginswith='D'
+)
+
+# Same query, reverse sort with limit
+rev_with_d = users.query_2(
+    account_type__eq='standard_user',
+    last_name__beginswith='D',
+    reverse=True,
+    limit=2
+)
+
+# Query against local secondary:
+recent = users.query_2(
+    account_type__eq='standard_user',
+    date_joined__gte=time.time() - (60 * 60),
+    index='DateJoinedIndex'
+)
+
+# Specifying a max page size to get faster responses
+all_users = users.query_2(
+    account_type__eq='standard_user',
+    date_joined__gte=0,
+    max_page_size=10
+)
+
+# Querying on data not in a key or index. Similar to map reduce:
+owners_with_emails = users.scan(
+    is_owner__eq=1,
+    email__null=False,
+)
+</pre>
+                </li>
+              </ul>
+            </li>
+          </ul>
+
+          <h4>Modeling Relationships</h4>
+          <ul>
+            <li>This basically just creates records with what are implicitly foreign keys.</li>
+          </ul>
+        </section><!-- /chapter-02 -->
+
+        <section class="chapter" id="chapter-03">
+          <header>
+            <h3>Chapter 3: How DynamoDB Works</h3>
+          </header>
+
+          <h4>Service-oriented architecture</h4>
+          <ul>
+            <li>Data transfer happens via GET/PUT/DELETE requests</li>
+            <li>There's no master node, it's a ring structure</li>
+          </ul>
+
+          <h4>Design Features</h4>
+          <ul>
+            <li><strong>Data Replication</strong>
+              <ul>
+                <li>Uses eventual consistency.</li>
+                <li>That can lead to write conflicts</li>
+              </ul>
+            </li>
+            <li><strong>Conflict Resolution</strong>
+              <ul>
+                <li>Most data stores resolve conflicts on write ops to keep reads lightweight</li>
+                <li>Dynamo uses an always-writable strategy, and uses a last-write-wins strategy for resolving conflicts</li>
+                <li>You can choose your own conflict resolution strategy via things like conditional writes</li>
+              </ul>
+            </li>
+            <li><strong>Scalability</strong>
+              <ul>
+                <li>All scaling is done by AWS, no end user expansion/contraction of the ring</li>
+              </ul>
+            </li>
+            <li><strong>Symmetry</strong>
+              <ul>
+                <li>No master node, work/data intended to be distributed evenly around the ring</li>
+              </ul>
+            </li>
+            <li><strong>Flexibility</strong>
+              <ul>
+                <li>Differently provisioned nodes can be part of the same ring.</li>
+              </ul>
+            </li>
+          </ul>  
+
+          <h4>Architecture</h4>
+          <ul>
+            <li><strong>Load Balancing</strong>
+              <ul>
+                <li>Achieved by consistent hashing to distribute data evenly</li>
+                <li>Both nodes and keys are hashed, and those are used for lookups, which makes identifying the node to query very efficient</li>
+                <li>Nodes can get assigned to multiple places on the ring to maintain symmetry</li>
+                <li>Node failure causes traffic to be distributed evenly to remaining nodes</li>
+              </ul>
+            </li>
+            <li><strong>Data replication</strong>
+              <ul>
+                <li>Handled by a 'coordinator node'.</li>
+                <li>Replication factor (N) is configured per instance, and the coordinator node first keeps the key on the local machine, then replicates it to N minus 1 successor machines moving clockwise around the ring</li>
+                <li>Lookups can walk from the first node to the successor nodes in the event of node failures.</li>
+              </ul>
+            </li>
+            <li><strong>Data versioning and reconciliation</strong>
+              <ul>
+                <li>Updates spawn object versions, which eventually get reconciled</li>
+                <li>A single object can have multiple versions at any one time.</li>
+                <li>Versioning and conflict resolution is done with vector clocks</li>
+                <li>If nodes go out of sync for an Item, they need to be reconciled</li>
+                <li>Logic-based reconciliation allows business logic to determine how to proceed</li>
+                <li>Time-based reconciliation selects the object version with the latest timestamp</li>
+              </ul>
+            </li>
+            <li><strong>Request Handling</strong>
+              <ul>
+                <li>A get or put can be handled in two ways: via a load balancer, or by addressing a node directly via hash</li>
+                <li>End users don't get to choose how it happens.</li>
+                <li>Dynamo is quorum based.</li>
+                <li>Dynamo keeps R plus W less than N, for better latency</li>
+                <li>When a coordinator node gets a put(), it creates a new version of the object in the vector clock, and writes locally. Then it sends the update along with the vector clock to the N most reachable nodes. If at least W-1 respond, the write is successful.</li>
+                <li>For a get(), the coordinator node requests all available versions of the data from the N most reachable nodes. If multiple versions come in, it resolves them via vector clock and returns the reconciled version.</li>
+              </ul>
+            </li>
+            <li><strong>Handling failures</strong>
+              <ul>
+                <li>Two types of failures: temporary and permanent</li>
+                <li>Temporary failures are dealt with via hinted handoff--nodes wait for the correct node to come back online, then forwards applicable updates to that node until it is back in sync</li>
+                <li>Replica sync is done with Merkle Trees, which are effective at sensing changed tree structures.</li>
+                <li>Each node maintains a Merkle tree for every key range it has, which lets it check whether certain key ranges are in sync or not. If it finds discrepancies, child-wise traversal is done to find the cause.</li>
+                <li>Permanent node failures have to be explicitly noted by an administrator for Dynamo to take nodes out of the ring entirely.</li>
+              </ul>
+            </li>
+            <li><strong>Seed nodes</strong>
+              <ul>
+                <li>New nodes come on via Gossip protocol</li>
+                <li>Some nodes in the cluster are 'seed nodes', which have all information about node membership in the ring</li>
+                <li>All nodes ultimately reconcile their membership information with seed nodes.</li>
+              </ul>
+            </li>
+          </ul>
+
+          <h4>Functional Components</h4>
+          <ul>
+            <li>Each node consists of a Request Coordinator, Membership and Failure Detection, and a Local Persistent Store.</li>
+            <li><strong>Request Coordinator</strong>
+              <ul>
+                <li>The RC is an event-driven messaging component that works like Staged-Event Drive Architecture (SEDA), by breaking complex events into multiple stages.</li>
+                <li>The RC is responsible for handling client requests.</li>
+                <li>When it receives a get, it asks for data from the nodes where the key range is</li>
+                <li>It waits until it gets sufficient responses and does reconciliation, or fails the request if quorum wasn't achieved.</li>
+                <li>After the request is fulfilled, the process waits around for any delayed responses. If any node returns stale data, the coordinator updates it appropriately.</li>
+                <li>For write requests, the top N nodes in the preferred list are chosen to store the update.</li>
+              </ul>
+            </li>
+            <li><strong>Membership failure and detection</strong>
+              <ul>
+                <li>Maintains membership info for the node, tracks any new node addition or removal, manages the key range accordingly.</li>
+                <li>All membership-related information (key hash ranges of peers, seed nodes) is maintained by this service.</li>
+              </ul>
+            </li>
+            <li><strong>Local persistence store</strong>
+              <ul>
+                <li>Typically the storage is either BerkeleyDB or MySQL.</li>
+                <li>BerkeleyDB is used when the object size has a max limit of 10K, MySQL for larger</li>
+                <li>Most of amazon's production systems use BerkeleyDB</li>
+                <li>End users can't choose which system backs their instance.</li>
+              </ul>
+            </li>
+          </ul>
+        </section><!-- /chapter-03 -->
+
+        <section class="chapter" id="chapter-04">
+          <header>
+            <h3>Chapter 4: Best Practices</h3>
+          </header>
+
+          <h4>Table level best practices</h4>
+          <ul>
+            <li><strong>Choosing a Primary Key</strong>
+              <ul>
+                <li>The hash key determines how items get distributed across nodes. If some items in a table are more heavily used, load distribution can be unbalanced.</li>
+                <li>One approach to a 'hot partition' being hit more than the others is to create copies of the most popular data under new hash keys, and make sure those are distributed across partitions.</li>
+                <li>For the record, this section reads like it was written by somebody whose English is shaky.</li>
+              </ul>
+            </li>
+            <li><strong>Evenly distributed data upload</strong>
+              <ul>
+                <li>This section doesn't make much sense either.</li>
+              </ul>
+            </li>
+            <li><strong>Managing time series data</strong>
+              <ul>
+                <li><q>it is recommended to create tables based on time range, which means creating a new table for each week or month instead of saving all data in the table.</q></li>
+                <li>Also not clear or helpful.</li>
+              </ul>
+            </li>
+          </ul>
+
+          <h4>Item Best Practices</h4>
+        </section><!-- /chapter-04 -->
+      </section><!-- /chapter-summaries -->
+    </article>
+  </body>
+</html>
