@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <title>TDD Diagrams</title>
+        <style type="text/css">
+        .no { color: #CC3333; }
+        .yes { color: #33CC33; }
+        </style>
+    </head>
+    <body>
+<h1>TDD Diagrams</h1>
+<h2>Overall Process</h2>
+<pre>
+                                                      <span class="no">No</span>            
+      +&ndash;&ndash;&ndash;&ndash;&ndash;&ndash;&ndash;&ndash;&ndash;&ndash;&ndash;&ndash;&ndash;&ndash;&ndash;&ndash;&ndash;&ndash;&ndash;&ndash;&ndash;&ndash;&ndash;&ndash;&ndash;&ndash;&ndash;&ndash;&ndash;&ndash;&ndash;&ndash;&ndash;&ndash;&ndash;&ndash;&ndash;&ndash;&ndash;&ndash;&ndash;&ndash;&ndash;&ndash;&ndash;&ndash;&ndash;&ndash;&ndash;&ndash;&ndash;+         
+      v                                                   |         
+                                                          |         
++&ndash;&ndash;&ndash;&ndash;&ndash;&ndash;&ndash;&ndash;&ndash;&ndash;+            +&ndash;&ndash;&ndash;&ndash;&ndash;&ndash;&ndash;&ndash;&ndash;&ndash;&ndash;&ndash;+            +&ndash;&ndash;&ndash;&ndash;&ndash;&ndash;&ndash;+&ndash;&ndash;&ndash;&ndash;&ndash;&ndash;&ndash;&ndash;+
+|          |            |            |   <span class="yes">Yes</span>      |                |
+|  Write   +&ndash;&ndash;&ndash;&ndash;&ndash;&ndash;&ndash;&ndash;&ndash;&ndash;&gt; |  Run the   +&ndash;&ndash;&ndash;&ndash;&ndash;&ndash;&ndash;&ndash;&ndash;&ndash;&gt; |  Does it need  |
+|  a Test  |            | test. Does |            |  refactoring?  |
+|          |            |  it pass?  | &lt;&ndash;+        |                |
++&ndash;&ndash;&ndash;&ndash;&ndash;&ndash;&ndash;&ndash;&ndash;&ndash;+            |            |   |        +&ndash;&ndash;&ndash;&ndash;&ndash;&ndash;&ndash;&ndash;+&ndash;&ndash;&ndash;&ndash;&ndash;&ndash;&ndash;+
+                        +&ndash;&ndash;&ndash;&ndash;&ndash;&ndash;+&ndash;&ndash;&ndash;&ndash;&ndash;+   |                 |        
+                               |         |                 | <span class="yes">Yes</span>    
+                           <span class="no">No</span>  v         |                 |        
+                                         |                 |        
+                    +&ndash;&ndash;&ndash;&ndash;&ndash;&ndash;&ndash;&ndash;&ndash;&ndash;&ndash;&ndash;&ndash;&ndash;&ndash;&ndash;&ndash;&ndash;&ndash;&ndash;+&ndash;+               |        
+                    |                      |               |        
+                    |  Write minimal code. | &lt;&ndash;&ndash;&ndash;&ndash;&ndash;&ndash;&ndash;&ndash;&ndash;&ndash;&ndash;&ndash;&ndash;+        
+                    |                      |                        
+                    +&ndash;&ndash;&ndash;&ndash;&ndash;&ndash;&ndash;&ndash;&ndash;&ndash;&ndash;&ndash;&ndash;&ndash;&ndash;&ndash;&ndash;&ndash;&ndash;&ndash;&ndash;&ndash;+                        
+</pre>
+
+<h2>With Functional and Unit Tests</h2>
+<pre>
+                                                             <span class="no">No</span>                     
+         +&ndash;&ndash;&ndash;&ndash;&ndash;&ndash;&ndash;&ndash;&ndash;&ndash;&ndash;&ndash;&ndash;&ndash;&ndash;&ndash;&ndash;&ndash;&ndash;&ndash;&ndash;&ndash;&ndash;&ndash;&ndash;&ndash;&ndash;&ndash;&ndash;&ndash;&ndash;&ndash;&ndash;&ndash;&ndash;&ndash;&ndash;&ndash;&ndash;&ndash;&ndash;&ndash;&ndash;&ndash;&ndash;&ndash;&ndash;&ndash;&ndash;&ndash;&ndash;&ndash;&ndash;&ndash;&ndash;+                  
+         v                                                       |                  
+                                                                 |                  
+  +&ndash;&ndash;&ndash;&ndash;&ndash;&ndash;&ndash;&ndash;&ndash;&ndash;&ndash;&ndash;&ndash;&ndash;+         +&ndash;&ndash;&ndash;&ndash;&ndash;&ndash;&ndash;&ndash;&ndash;&ndash;&ndash;&ndash;&ndash;&ndash;&ndash;&ndash;&ndash;+        +&ndash;&ndash;&ndash;&ndash;&ndash;&ndash;&ndash;&ndash;&ndash;&ndash;+&ndash;&ndash;&ndash;&ndash;&ndash;&ndash;&ndash;&ndash;&ndash;&ndash;+       
+  |              |         |                 |        |                     |       
+  |   Write a    |         |   Run the FT.   |  <span class="yes">Yes</span>   |  Does the app need  |  <span class="yes">Yes</span>  
+  |  functional  +&ndash;&ndash;&ndash;&ndash;&ndash;&ndash;&ndash;&gt; |  Does it pass?  +&ndash;&ndash;&ndash;&ndash;&ndash;&ndash;&gt; |    refactoring?     +&ndash;&ndash;&ndash;&ndash;&ndash;&ndash;+
+  |     test     |         |                 |        |                     |      |
+  |              |         +&ndash;&ndash;&ndash;&ndash;&ndash;&ndash;&ndash;+&ndash;&ndash;&ndash;&ndash;&ndash;&ndash;&ndash;&ndash;&ndash;+        +&ndash;&ndash;&ndash;&ndash;&ndash;&ndash;&ndash;&ndash;&ndash;&ndash;&ndash;&ndash;&ndash;&ndash;&ndash;&ndash;&ndash;&ndash;&ndash;&ndash;&ndash;+      |
+  +&ndash;&ndash;&ndash;&ndash;&ndash;&ndash;&ndash;&ndash;&ndash;&ndash;&ndash;&ndash;&ndash;&ndash;+                 |                                               |
+                               <span class="no">No</span>  |      ^                                        |
+                                   |      |                                        |
+                                   v      |                                        |
+                                          |                                        |
++&ndash;&ndash;&ndash;&ndash;&ndash;&ndash;&ndash;&ndash;&ndash;&ndash;&ndash;&ndash;&ndash;&ndash;&ndash;&ndash;&ndash;&ndash;&ndash;&ndash;&ndash;&ndash;&ndash;&ndash;&ndash;&ndash;&ndash;&ndash;&ndash;&ndash;&ndash;&ndash;&ndash;&ndash;&ndash;&ndash;&ndash;&ndash;&ndash;&ndash;&ndash;+&ndash;&ndash;&ndash;&ndash;&ndash;&ndash;&ndash;&ndash;&ndash;&ndash;&ndash;&ndash;&ndash;&ndash;&ndash;&ndash;&ndash;&ndash;&ndash;&ndash;&ndash;&ndash;&ndash;&ndash;&ndash;&ndash;&ndash;&ndash;&ndash;&ndash;&ndash;&ndash;&ndash;&ndash;&ndash;&ndash;+   |
+|                                                                              |   |
+|                                                                              |   |
+|    +&ndash;&ndash;&ndash;&ndash;&ndash;&ndash;&ndash;&ndash;&ndash;&ndash;&ndash;+            +&ndash;&ndash;&ndash;&ndash;&ndash;&ndash;&ndash;&ndash;&ndash;&ndash;&ndash;&ndash;+            +&ndash;&ndash;&ndash;&ndash;&ndash;&ndash;&ndash;&ndash;&ndash;&ndash;&ndash;&ndash;&ndash;&ndash;&ndash;&ndash;+     |   |
+|    |           |            |            |   <span class="yes">Yes</span>      |                |     |   |
+|    |  Write a  +&ndash;&ndash;&ndash;&ndash;&ndash;&ndash;&ndash;&ndash;&ndash;&ndash;&gt; |  Run the   +&ndash;&ndash;&ndash;&ndash;&ndash;&ndash;&ndash;&ndash;&ndash;&ndash;&gt; |  Does app      |     |   |
+|    | unit test |            | test. Does |            |  refactoring?  |     |   |
+|    |           |            |  it pass?  | &lt;&ndash;+        |                |     |   |
+|    +&ndash;&ndash;&ndash;&ndash;&ndash;&ndash;&ndash;&ndash;&ndash;&ndash;&ndash;+            |            |   |        +&ndash;&ndash;&ndash;&ndash;&ndash;&ndash;&ndash;&ndash;+&ndash;&ndash;&ndash;&ndash;&ndash;&ndash;&ndash;+     |   |
+|                             +&ndash;&ndash;&ndash;&ndash;&ndash;&ndash;+&ndash;&ndash;&ndash;&ndash;&ndash;+   |                 |             |   |
+|                                    |         |                 | <span class="yes">Yes</span>         |   |
+|                                <span class="no">No</span>  v         |                 |             |   |
+|                                              |                 |             | &lt;&ndash;+
+|                         +&ndash;&ndash;&ndash;&ndash;&ndash;&ndash;&ndash;&ndash;&ndash;&ndash;&ndash;&ndash;&ndash;&ndash;&ndash;&ndash;&ndash;&ndash;&ndash;&ndash;+&ndash;+               |             |    
+|                         |                      |               |             |    
+|                         |  Write minimal code. | &lt;&ndash;&ndash;&ndash;&ndash;&ndash;&ndash;&ndash;&ndash;&ndash;&ndash;&ndash;&ndash;&ndash;+             |    
+|                         |                      |                             |    
+|                         +&ndash;&ndash;&ndash;&ndash;&ndash;&ndash;&ndash;&ndash;&ndash;&ndash;&ndash;&ndash;&ndash;&ndash;&ndash;&ndash;&ndash;&ndash;&ndash;&ndash;&ndash;&ndash;+                             |    
+|                                                                              |    
+|                                                                              |    
+|                          Unit Testing / Code Cycle                           |    
+|                                                                              |    
++&ndash;&ndash;&ndash;&ndash;&ndash;&ndash;&ndash;&ndash;&ndash;&ndash;&ndash;&ndash;&ndash;&ndash;&ndash;&ndash;&ndash;&ndash;&ndash;&ndash;&ndash;&ndash;&ndash;&ndash;&ndash;&ndash;&ndash;&ndash;&ndash;&ndash;&ndash;&ndash;&ndash;&ndash;&ndash;&ndash;&ndash;&ndash;&ndash;&ndash;&ndash;&ndash;&ndash;&ndash;&ndash;&ndash;&ndash;&ndash;&ndash;&ndash;&ndash;&ndash;&ndash;&ndash;&ndash;&ndash;&ndash;&ndash;&ndash;&ndash;&ndash;&ndash;&ndash;&ndash;&ndash;&ndash;&ndash;&ndash;&ndash;&ndash;&ndash;&ndash;&ndash;&ndash;&ndash;&ndash;&ndash;&ndash;+    
+</pre>
+    </body>
+</html>
