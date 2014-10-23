@@ -1,0 +1,1050 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <title>Toplines: Learning Python, 5th Ed.</title>
+    <link href="./bootstrap/css/bootstrap.min.css" rel="stylesheet">
+  </head>
+  <body>
+    <div class="container">
+    <article id="toplines-restful-web-services">
+      <header>
+      <h1>Learning Python, 5th Ed.<small>, Lutz, 2013</small></h1>
+      </header>
+
+      <div class="well"> 
+      <section id="executive-summary">
+        <header>
+          <h2 class="text-center">Executive Summary</h2>
+        </header>
+      </section>
+      </div>
+
+      <section id="chapter-summaries">
+        <header>
+          <h2 class="text-center">Chapter Summaries</h2>
+        </header>
+
+        <section class="chapter" id="chapter-22">
+          <header>
+            <h3>Chapter 22: Modules: The Big Picture</h3>
+          </header>
+
+          <ul>
+            <li>Modules are the highest level program organization unit in Python</li>
+            <li>Typically a file is a module, and modules import the namespaces of other modules.</li>
+            <li>Modules may correspond to extensions in other languages, or directories in packages.</li>
+            <li>Two key statements and one key function:
+              <ul>
+                <li><code>import</code> &mdash; fetches a module as a whole</li>
+                <li><code>from</code> &mdash; fetches particular names from a module</li>
+                <li><code>reload</code> &mdash; reloads a module's code without restarting Python</li>
+              </ul>
+            </li>
+          </ul>
+
+          <h4>Why Use Modules?</h4>
+          <ul>
+            <li>Code reuse</li>
+            <li>Namespace partitioning</li>
+            <li>Implementing shared services or data</li>
+          </ul>
+
+          <h4>Python Program Architecture</h4>
+          <ul>
+            <li>A Python program is made of text files with Python statements, with a top-level file, and zero or more module files.</li>
+            <li>Top level file controls the main flow of control, launches the program.</li>
+            <li>Module files are libraries of tools that collect components used in the top level file and elsewhere.</li>
+            <li>Module files generally have no effect outside Python itself when executed.</li>
+            <li>Import statements do two things:
+              <ul>
+                <li>Identify the external file to load</li>
+                <li>Creates a namespace variable assigned to the loaded module</li>
+              </ul>
+            </li>
+            <li>All names defined at the top level of a module file become attributes of that module's namespace on import.</li>
+          </ul>
+
+          <h4>How Imports Work</h4>
+          <ul>
+            <li>Imports perform three steps at run time:
+              <ol>
+                <li><strong>Find the module's file</strong>: Looks on the module search path for known file types to locate the module file corresponding to the import statement.</li>
+                <li><strong>Compile the file to bytecode if needed</strong>: Checks the file modification times and the byte code's Python version number to determine whether to (re-)compile.</li>
+                <li><strong>Run the module's code to build the objects it defines</strong>: Statements in the file are executed in linear order, assignments become attributes of the module object.</li>
+              </ol>
+            </li>
+          </ul>
+
+          <h4>Byte Code Files: __pycache__ in Python 3.2+</h4>
+          <ul>
+            <li>Prior to 3.2 (including all 2.X), .pyc files lived alongside their .py files. In 3.2+, they're in __pycache__ subdirectory.</li>
+          </ul>
+
+          <h4>The Module Search Path</h4>
+          <ul>
+            <li>The Python search path is a concatenation of:
+              <ol>
+                <li>Present directory of the program's main file</li>
+                <li>PYTHONPATH env var</li>
+                <li>Standard library directories</li>
+                <li>Contents of any .pth files</li>
+                <li>The site-packages home for third party extensions</li>
+              </ol>
+            </li>
+            <li>You can inspect <code>sys.path</code> to view the current search path</li>
+            <li>Modifying <code>sys.path</code> modifies the search path for all future imports in the script</li>
+            <li>Python will select a module file from a name match against any:
+              <ul>
+                <li>Source code file (.py)</li>
+                <li>Byte code file (.pyc)</li>
+                <li>Optimized bytecode file (.pyo)</li>
+                <li>Directories, for package imports</li>
+                <li>Compiled extension module (.so, .dll, .pyd, etc)</li>
+                <li>Compiled built in module in C that is statically linked into Python</li>
+                <li>A ZIP file that is extracted on import</li>
+                <li>An in-memory image, for frozen executables</li>
+                <li>A Java class in Jython</li>
+                <li>A .NET component in IronPython</li>
+              </ul>
+            </li>
+            <li>Conflicts are resolved by choosing the first match found.</li>
+            <li>It is possible to create 'import hooks' which redefine how imports work.</li>
+            <li>For details on import hooks, see the standard library docs for <code>__import__</code></li>
+            <li>You can create an optimized byte code file with the <code>-o</code> argument to the CLI interpreter</li>
+          </ul>
+        </section><!-- /chapter-22 -->
+
+        <section class="chapter" id="chapter-23">
+          <header>
+            <h3>Chapter 23: Module Coding Basics</h3>
+          </header>
+          
+          <h4>Module Creation</h4>
+          <ul>
+            <li>Any text file with a .py extension is a module file.</li>
+            <li>All names assigned at the top level of the file are module attributes.</li>
+            <li>Module files for import must be named with letters, digits, and underscores.</li>
+            <li>Do not name module files after reserved words.</li>
+          </ul>
+
+          <h4>Module Usage</h4>
+          <ul>
+            <li><code>import</code> brings in an entire module which may be referenced by name
+<pre>
+import module1
+module1.printer('Hello!')
+</pre>
+            </li>
+            <li><code>from</code> copies specific attributes from a module into the local scope of the current file:
+<pre>
+from module1 import printer, bigprinter
+printer('Hello!')
+bigprinter('Hello!')
+</pre>
+            </li>
+            <li>You can copy all attributes into the local scope with <code>from x import *</code></li>
+            <li>Modules are loaded and run on the first import, and only the first.</li>
+            <li>Since top-level code in a module is executed once, you can use it to init variables.</li>
+            <li>Both import and from are executable statements that perform assignments into the local scope.</li>
+            <li>A variable imported with <code>from</code> will only be mutable in local scope. One imported with <code>import</code> and addressed with a qualified name will be changed in the module's scope.</li>
+            <li>Use caution with <code>from</code> since it can corrupt the local namespace.</li>
+          </ul>
+
+          <h4>Module Namespaces</h4>
+          <ul>
+            <li>Module namespaces can be accessed with the <code>__dict__</code> attribute or the <code>dir(<i>modulename</i>)</code> function</li>
+            <li>Module scope becomes an attribute dictionary of the module object when the <code>import</code> statement creates that module object in the local scope.</li>
+            <li>You cannot access names in a module file without importing that file and creating an object in the local scope.</li>
+            <li>Imported module code can by default never see code in the file importing it.</li>
+          </ul>
+
+          <h4>Reloading Modules</h4>
+          <ul>
+            <li>The first import runs the module file code. Later imports reuse the object that creates.</li>
+            <li>You can use the <code>reload</code> function to force an already loaded module to rerun.</li>
+            <li><code>reload</code> only works on Python modules, not extension modules.</li>
+            <li><code>reload</code> gets passed an existing module object:
+<pre>
+import module1
+reload(module1)
+</pre>
+            </li>
+            <li>In 3.X, you must import <code>reload</code> as <code>from imp import reload</code></li>
+            <li>Rerunning a module's code overwrites its existing namespace.</li>
+            <li>Top-level assignments in that namespace replace names with new values.</li>
+            <li>Reloads impact all clients that use <code>import</code> to fetch modules since they share the module object created.</li>
+            <li>Reloads impact future <code>from</code> clients only, since previous <code>from</code> statements copied definitions into the local namespace</li>
+            <li>Reloads apply to a single module only, they are not transitive.</li>
+          </ul>
+        </section>
+
+        <section class="chapter" id="chapter-24">
+          <header>
+            <h3>Chapter 24: Module Packages</h3>
+          </header>
+          
+          <h4>Package Import Basics</h4>
+          <ul>
+            <li>When an <code>import</code> statement names a dot-delimited path rather than a single name, Python will use the leftmost name as the first search term in sys.path, and attempt to walk to the rightmost name once it finds the leftmost as a real directory.</li>
+            <li>Those directories are 'packages'</li>
+            <li>If you import via packages, each directory must have a file named <code>__init__.py</code> to be recognized as a package directory.</li>
+            <li>The <code>__init__.py</code> file may contain executable code, which will run in the event the directory or any of its contents is imported</li>
+            <li>You can perform package initialization in the <code>__init__.py</code> file, as well as assign names which will then be available via the module object created for that directory's name.</li>
+            <li>You can also list via <code>__all__</code> what is exported when a directory is imported directly.</li>
+            <li>It is legal for the <code>__init__.py</code> files to be completely empty.</li>
+          </ul>
+
+          <h4>Package Import Example</h4>
+          <ul>
+            <li>It may be helpful to use <code>from</code> to bring in deeply nested names, so you don't have to type their full qualifying string multiple times.</li>
+          </ul>
+
+          <h4>Why Use Package Imports?</h4>
+          <ul>
+            <li>They give context to imported names.</li>
+            <li>They simplify your search path.</li>
+            <li>They resolve ambiguities between imports.</li>
+          </ul>
+
+          <h4>Package Relative Imports</h4>
+          <ul>
+            <li>In 2.X you can implicitly search package directories first on import, to do relative imports without using fully qualified path names.</li>
+            <li>Examples of relative imports:
+<pre>
+from . import module1           # Relative to this package
+from .module1 import printer
+from module1 import bigprinter
+from .. import module2
+</pre>
+            </li>
+            <li>Dots can only force relative imports with <code>from</code>, not <code>import</code>.</li>
+          </ul>
+
+          <h4>Python 3.3 Namespace Packages</h4>
+          <ul>
+            <li>We'll use the namespace packages from setuptools instead.</li>
+          </ul>
+        </section><!-- /chapter-24 -->
+
+        <section class="chapter" id="chapter-25">
+          <header>
+            <h3>Chapter 25: Advanced Module Topics</h3>
+          </header>
+          
+          <h4>Module Design Concepts</h4>
+          <ul>
+            <li>Ideas to keep in mind:
+              <ul>
+                <li>Any code you write is inside a module, since any python file is a module.</li>
+                <li>Modules should be as independent of globals used within other modules as possible.</li>
+                <li>Make all the components of a module share a general purpose.</li>
+                <li>Don't change the variables of other modules.</li>
+              </ul>
+            </li>
+          </ul>
+
+          <h4>Data Hiding in Modules</h4>
+          <ul>
+            <li>There's no syntactical constraint on data sharing in Python, so it's all conventions.</li>
+            <li>Any name prefixed with an underscore won't be copied in a <code>from x import *</code> call</li>
+            <li>Assigning a list of variable name strings to <code>__all__</code> at the top level of the module will limit what is brought in via a * import:
+<pre>
+__all__ = ['a','_c']    # An import of * will bring both of these.
+a,b,_c,_d = 1,2,3,4
+</pre>
+            </li>
+          </ul>
+
+          <h4>Enabling Future Language Features: __future__</h4>
+          <ul>
+            <li>You can get backported features from the __future__ module.</li>
+          </ul>
+
+          <h4>Mixed Usage Modes: __name__ and __main__</h4>
+          <ul>
+            <li>In a single file, one mode for import, one for execution:
+<pre>
+def somefunc()
+  pass
+
+if __name__ == '__main__':
+  somefunc()
+</pre>
+            </li>
+          </ul>
+
+          <h4>Changing the Module Search Path</h4>
+        </section><!-- /chapter-25 -->
+
+        <section class="chapter" id="chapter-26">
+          <header>
+            <h3>Chapter 26: OOP: The Big Picture</h3>
+          </header>
+          <ul>
+            <li>Chapter looks at Python's <code>class</code> construct.</li>
+          </ul>
+
+          <h4>Why Use Classes?</h4>
+          <ul>
+            <li>Inheritance &mdash; properties and methods can be granted to class descendants</li>
+            <li>Composition &mdash; objects can be made of collections of other objects.</li>
+            <li>Operator overloading &mdash; class instances can respond to generic operators with specific business logic</li>
+            <li><q>At its base, the mechanism of OOP in Python is largely just <i>two bits of magic</i>: a special first argument in functions (to receive the subject of a call) and inheritance attribute search (to support programming by customization).</q></li>
+          </ul>
+
+          <h4>OOP from 30,000 Feet</h4>
+          <ul>
+            <li><strong>Attribute Inheritance Search</strong>:
+              <ul>
+                <li>A call to any <code><i>object.attribute</i></code> in Python initiates a search over a tree of linked objects, terminating at the first found match for <code><i>attribute</i></code>.</li>
+                <li>Search proceeds starting in <code><i>object</i></code>, then in all classes above it, bottom to top and left to right.</li>
+              </ul>
+            </li>
+            <li>Both classes and instances in Python are object types:
+              <ul>
+                <li>Classes are instance factories, with their attributes providing data and functions to be inherited by all instances.</li>
+                <li>Instances are concrete domain items, with attributes representing data that varies across instances.</li>
+              </ul>
+            </li>
+            <li>Superclass &mdash; class that is inherited from</li>
+            <li>Subclass &mdash; class that inherits</li>
+            <li>A class can be thought of as a namespace corresponding to a single (<code>class</code>) statement.</li>
+            <li>Method &mdash; a function mapped to an attribute</li>
+            <li>Method calls are function calls, but with the instance object injected as the first argument to the call.</li>
+            <li>General function of a <code>class</code>:
+              <ol>
+                <li>A <code>class</code> statement generates a new class object.</li>
+                <li>Calling that class object generates a new instance object.</li>
+                <li>Instances are linked back to the classes they are created from.</li>
+                <li>Classes are linked to their superclasses in the order they were listed in the <code>class</code> header line.</li>
+              </ol>
+            </li>
+            <li>
+<pre>
+Class C2: pass
+Class C3: pass
+class C1(C2, C3): pass
+</pre>
+            </li>
+            <li>Multiple inheritance is allowed, and arbitrated by the order of superclasses.</li>
+            <li>You can always reference a member of an inherited class directly to override the attribute search tree.</li>
+            <li>Attributes are normally attached to classes by assignments in the top level of the <code>class</code> statement, not inside nested <code>def</code> statements.</li>
+            <li>Attributes are usually attached to instances by assignment to the special argument, <code>self</code>, passed to internal functions.</li>
+            <li>
+<pre>
+class C1(C2, C3):
+  def setname(self, who):
+    self.name = who
+</pre>
+            </li>
+            <li>Constructor with <code>__init__()</code>:
+<pre>
+class C1(C2, C3):
+  def __init__(self, who):
+    self.name = who
+</pre>
+            </li>
+            <li>Polymorphism &mdash; overriding a method in a descendant:
+<pre>
+class Employee:
+  def computeSalary(self): pass
+  def giveRaise(self): pass
+
+class Engineer(Employee):
+  def computeSalary(self): pass
+</pre>
+            </li>
+          </ul>
+        </section><!-- /chapter-26 -->
+
+        <section class="chapter" id="chapter-27">
+          <header>
+            <h3>Chapter 27: Class Coding Basics</h3>
+          </header>
+          
+          <h4>Classes Generate Multiple Instance Objects</h4>
+          <ul>
+            <li>Class objects:
+              <ul>
+                <li>The <code>class</code> statement creates a class object and assigns it a name, creating an executable statement <code><i>classname</i>()</code>.</li>
+                <li>Assignments within the <code>class</code> statement make class attributes. Specifically, top-level assignments not nested in a <code>def</code> statement.</li>
+              </ul>
+            </li>
+            <li>Instance objects:
+              <ul>
+                <li>Calling <code><i>classname</i>()</code> creates an instance object.</li>
+                <li>Instances inherit class attributes, and have a local namespace.</li>
+                <li>Assignments to attributes of <code>self</code> set per-instance attributes.</li>
+              </ul>
+            </li>
+            <li>Instance attributes may be accessed either by method, or via the dot operator as <code><i>instance.attribute</i></code>.</li>
+          </ul>
+
+          <h4>Classes are Customized by Inheritance</h4>
+          <ul>
+            <li>Inheritance:
+              <ul>
+                <li>Superclasses are listed in parentheses in the <code>class</code> header.</li>
+                <li>Classes inherit attributes from superclasses.</li>
+                <li>Instances inherit attributes from all accessible classes.</li>
+                <li>Each <code><i>object.attribute</i></code> call invokes a new search.</li>
+                <li>Logical changes are done via polymorphism in a subclass, not changing the superclass.</li>
+              </ul>
+            </li>
+            <li>Note that classes are attributes in module namespaces.</li>
+          </ul>
+
+          <h4>Classes can Intercept Python Operators</h4>
+
+          <ul>
+            <li>Operator overloading:
+              <ul>
+                <li>Method names between double underscores (<code>__X__</code>) are operator overloading hooks.</li>
+                <li>Classes can override most built-in type operations.</li>
+                <li><q>There are no defaults for operator overloading methods, and none are required. If a class does not define or inherit an operator overloading method, it just means that the corresponding operation is not supported for the class's instances.</q></li>
+                <li>New style classes in 2.X have a root class named <code>object</code> providing defaults for some built in methods.</li>
+              </ul>
+            </li>
+          </ul>
+
+          <h4>The World's Simplest Python Class</h4>
+<pre>
+# Create an empty namespace object
+class rec: pass
+# Assign attributes
+rec.name = 'Bob'
+rec.age = 40
+# Create instances
+x = rec()
+y = rec()
+x.name = 'Sue'
+# View link back to class object:
+x.__class__
+</pre>
+        </section><!-- /chapter-27 -->
+
+        <section class="chapter" id="chapter-29">
+          <header>
+            <h3>Chapter 29: Class Coding Details</h3>
+          </header>
+          <h4>The <code>class</code> Statement</h4>
+          <ul>
+            <li><q>A <code>class</code> statement is an object builder, and an implicit assignment&mdash;when run, it generates a class object and stores a reference to it in the name used in the header. Also like a <code>def</code>, a <code>class</code> statement is true executable code&mdash;your class doesn't exist until Python reaches and runs the <code>class</code> statement that defines it. This typically happens while importing the module it is coded in, but not before.</q></li>
+            <li><strong>General Form</strong>
+              <ul>
+                <li>
+<pre>
+class <i>name</i>(<i>superclass</i>,...):           # Assign to name
+  attr = value                        # Shared class data
+  def method(self,...):               # Methods
+    self.attr = value                 # Per-instance data
+</pre>
+                </li>
+              </ul>
+            </li>
+            <li>Classes are namespaces that box attributes and export data and logic to clients.</li>
+            <li>When executing a <code>class</code> statement, Python runs all statements in the statement body, in order.</li>
+            <li>Assignments within the body create names in the local scope of the class, which become attributes in the generated class object.</li>
+            <li>Like Python functions, classes are local scopes with names created by nested assignment.</li>
+            <li>Like module names, names assigned in a class body are attributes of the class object.</li>
+            <li>You can assign values to class attributes after the class object is created.</li>
+            <li>Assignment to an instance attribute never changes the class attribute.</li>
+          </ul>
+        
+          <h4>Methods</h4>
+          <ul>
+            <li>Methods are function objects created by <code>def</code> statements nested within a <code>class</code> statement's body.</li>
+            <li>Methods differ from functions in that the first argument to a method is always the instance object it is called from. This is accomplished by translating any instance method call <code>instance.method(arg)</code> to a class method call with the instance as the first arg: <code>class.method(instance, arg)</code></li>
+            <li>Convention is to name the first argument <code>self</code> in method definitions.</li>
+            <li>It is acceptable to explicitly call the class method with the instance as the first argument. These are equivalent calls:
+<pre>
+class MyClass:
+  def print_something(self, thing):
+    print thing
+
+my_instance = MyClass()
+
+<mark>my_instance.print_something('Thing 1')</mark>
+<mark>MyClass.print_something(my_instance, 'Thing 1')</mark>
+</pre>
+            </li>
+            <li><strong>Calling Superclass Constructors</strong>
+              <ul>
+                <li>A class's <code>__init__</code> def may want to call the constructor of the class's superclass:
+<pre>
+class MySuper:
+  def __init__(self, x):
+    self.super_x = x
+
+class MySub:
+  def __init__(self, x, y):
+    MySuper.__init__(self, x)
+    self.sub_y = y
+
+my_sub_instance = MySub('a','b')
+</pre>
+                </li>
+                <li>Calling chained <code>__init__</code> statements is the most common form of operator overloading in Python.</li>
+              </ul>
+            </li>
+          </ul>
+
+          <h4>Inheritance</h4>
+          <ul>
+            <li>Namespace trees are generally constructed as follows:
+              <ol>
+                <li>Instance attributes are generated by assignments to <code>self</code> attributes in methods.</li>
+                <li>Class attributes are created by statements (assignments) in <code>class</code> statements.</li>
+                <li>Superclass links are made by listing classes in parentheses in a <code>class</code> statement header.</li>
+              </ol>
+            </li>
+            <li>Search proceeds from the instance, to the class, to superclasses in listed order.</li>
+            <li>Example of multiple techniques for changing inherited behavior:
+<pre>
+class Super:
+  def method(self): 
+    print('in Super.method')
+  def delegate(self):
+    self.action()
+
+class Inheritor(Super):
+  pass
+
+class Replacer(Super):
+  def method(self):
+    print('in Replacer.method')
+
+class Extender(Super):
+  def method(self):
+    print('starting Extender.method')
+    Super.method(self)
+    print('ending Extender.method')
+
+class Provider(Super):
+  def action(self):
+    print('in Provider.action')
+
+if __name__ == '__main__':
+  for klass in (Inheritor, Replacer, Extender):
+    print('\n' + klass.__name__ + '...')
+    klass().method()
+  print('\nProvider...')
+  x = Provider()
+  x.delegate()
+</pre>
+            </li>
+            <li>In the above, the <code>Super.delegate()</code> method expects an inheritor to define the <code>action()</code> method.</li>
+            <li>Typically an abstracted superclass like that would raise <code>NotImplementedError</code> if a subclass object attempted to call an abstract method not defined in the sub.</li>
+          </ul>
+
+          <h4>Namespaces: The Conclusion</h4>
+          <ul>
+            <li>Unqualified names are global unless/until assigned. Assignment makes a name local by default unless declared as global.</li>
+            <li>Referencing a simple name looks for that name in the current scope, then all enclosing functions, then the current global scope, then the built in scope. Enclosing classes are not searched, class names are instead fetched as object attributes.</li>
+            <li>That resolution pattern is sometimes called 'LEGB' for Local, Enclosing, Global, Built-in</li>
+            <li>Names qualified with a namespace refer to attributes of specific objects.</li>
+            <li>For class and instance objects, the LEGB reference resolution pattern is augmented to include inheritance search.</li>
+            <li>An assignment to a qualified attribute name creates or alters that attribute in the namespace of the qualifying object, and no other.</li>
+            <li>References to qualified attributes search for the attribute name in the qualifying object, then in all accessible classes above it, via inheritance search.</li>
+            <li>The location where a name is assigned determines the scope or object in which that name will reside:
+<pre>
+X = 11                # Module (global) name/attribute
+
+def f():
+  print(X)            # Accessing module X
+
+def g():
+  X = 22              # Local (function) variable, obscures module X
+  print(X)
+
+class C:
+  X = 33              # Class attribute C.X
+  def m(self):
+    X = 44            # Local variable within method
+    self.X = 55       # Instance attribute instance.X
+</pre>
+            </li>
+            <li>Importing a module gives access to names in the module namespace (what were effectively globals in original file of the imported module)</li>
+            <li>The scope implications for nested classes follow the LEGB lookup rule, creating local scopes similar to function definitions.</li>
+            <li>Though classes have access to enclosing functions' scopes, they do not act as enclosing scopes to code nested within the class. Python will search enclosing functions for referenced names, but never search enclosing classes.</li>
+            <li>Since reference resolution will skip enclosing classes, class attributes must be explicitly fetched as object attributes using inheritance</li>
+            <li>Every module namespace has a concrete implementation as a dictionary exposed via the built in <code>__dict__</code> attribute.</li>
+            <li>The same is true for class an instance objects. Attribute qualification is done via dictionary indexing, and attribute inheritance is a search of linked dictionaries.</li>
+            <li>Instances have a <code>__class__</code> attribute linking to their class</li>
+            <li>Classes have a <code>__bases__</code> attribute, which is a tuple containing links to higher superclasses.</li>
+            <li>Since attributes are dictionary keys, they can be fetched by qualification or key indexing:
+<pre>
+X.data1 == X.__dict__['data1']      # True
+</pre>
+            </li>
+            <li>Attributes from inheritance cannot be fetched via dictionary key, they must be resolved.</li>
+          </ul>
+
+          <h4>Documentation Strings Revisited</h4>
+          <ul>
+            <li>Docstrings are string literals Python automatically puts into the <code>__doc__</code> attribute of their corresponding object.</li>
+            <li>Can be part of module files, function <code>defs</code>, and classes and methods.</li>
+            <li>All docstrings are either one line quoted literals, or triple quoted strings.</li>
+            <li>Documentation can be accessed at runtime with <code>help(somenamespace)</code></li>
+          </ul>
+
+          <h4>Classes versus Modules</h4>
+          <table class="table">
+            <tr>
+              <th>Modules</th>
+              <th>Classes</th>
+            </tr>
+            <tr>
+              <td>
+                <ul>
+                  <li>Implement data/logic packages</li>
+                  <li>Created with Python files or other-language extensions</li>
+                  <li>Used by being imported</li>
+                  <li>Form the top level in Python program structure</li>
+                </ul>
+              </td>
+              <td>
+                <ul>
+                  <li>Implement new, full-featured objects</li>
+                  <li>Created with <code>class</code> statements</li>
+                  <li>Used by being called</li>
+                  <li>Live within a module</li>
+                </ul>
+              </td>
+            </tr>
+          </table>
+        </section><!-- /chapter-29 -->
+
+        <section class="chapter" id="chapter-30">
+          <header>
+            <h3>Chapter 30: Operator Overloading</h3>
+          </header>
+          <ul>
+            <li>Happens by overloading a built in method starting/ending with double underscores.</li>
+            <li><code>__init__</code> is the constructor built-in</li>
+            <li>Technically the first call is to <code>__new__</code>, but redefining that only happens in metaclasses.</li>
+            <li>List of common operator overloading methods: 
+              <table class="table">
+                <thead>
+                  <tr>
+                    <th>Method</th>
+                    <th>Implements</th>
+                    <th>Called for</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr>
+                    <td><code>__init__</code></td>
+                    <td>Constructor</td>
+                    <td>Object creation</td>
+                  </tr>
+                  <tr>
+                    <td><code>__del__</code></td>
+                    <td>Destructor</td>
+                    <td>Object reclamation</td>
+                  </tr>
+                  <tr>
+                    <td><code>__add__</code></td>
+                    <td>+ Operator</td>
+                    <td>X + Y, X += Y if no <code>__iadd__</code></td>
+                  </tr>
+                  <tr>
+                    <td><code>__or__</code></td>
+                    <td>| Operator (bitwise OR)</td>
+                    <td>X | Y, X |= Y if no <code>__ior__</code></td>
+                  </tr>
+                  <tr>
+                    <td><code>__repr__</code>, <code>__str__</code></td>
+                    <td>Printing, conversions</td>
+                    <td>print(x), repr(x), str(x)</td>
+                  </tr>
+                  <tr>
+                    <td><code>__call__</code></td>
+                    <td>Function calls</td>
+                    <td>X(*args, **kwargs)</td>
+                  </tr>
+                  <tr>
+                    <td><code>__getattr__</code></td>
+                    <td>Attribute fetch</td>
+                    <td>X.undefined</td>
+                  </tr>
+                  <tr>
+                    <td><code>__setattr__</code></td>
+                    <td>Attribute assignment</td>
+                    <td>X.any = value</td>
+                  </tr>
+                  <tr>
+                    <td><code>__delattr__</code></td>
+                    <td>Attribute deletion</td>
+                    <td>del X.any</td>
+                  </tr>
+                  <tr>
+                    <td><code>__getitem__</code></td>
+                    <td>Indexing, slicing, iteration</td>
+                    <td>X[key], X[i:j], for loops, etc, if no <code>__iter__</code></td>
+                  </tr>
+                  <tr>
+                    <td><code>__setitem__</code></td>
+                    <td>Index and slice assignment</td>
+                    <td>X[key] = value, X[i:j] = iterable</td>
+                  </tr>
+                  <tr>
+                    <td><code>__delitem__</code></td>
+                    <td>Index and slice deletion</td>
+                    <td>del X[key], del X[i:j]</td>
+                  </tr>
+                  <tr>
+                    <td><code>__len__</code></td>
+                    <td>Length</td>
+                    <td>len(X), truth tests if no <code>__bool__</code></td>
+                  </tr>
+                  <tr>
+                    <td><code>__lt__, __gt__, __le__, __ge__, __eq__, __ne__</code></td>
+                    <td>Comparisons</td>
+                    <td>X == Y, etc</td>
+                  </tr>
+                  <tr>
+                    <td><code>__radd__</code></td>
+                    <td>Right-side operators</td>
+                    <td>Other + X</td>
+                  </tr>
+                  <tr>
+                    <td><code>__iadd__</code></td>
+                    <td>In-place augmented operators</td>
+                    <td>X += Y (or else <code>__add__</code>)</td>
+                  </tr>
+                  <tr>
+                    <td><code>__iter__, __next__</code></td>
+                    <td>Iteration contexts</td>
+                    <td>I = iter(X), next(I); for loops, <code>in</code> if no <code>__contains__</code>, all comprehensions, map(F,X), others</td>
+                  </tr>
+                  <tr>
+                    <td><code>__contains__</code></td>
+                    <td>Membership test</td>
+                    <td>item in X</td>
+                  </tr>
+                  <tr>
+                    <td><code>__index__</code></td>
+                    <td>Integer value</td>
+                    <td>hex(X), bin(X), oct(X), O[X], O[X:]</td>
+                  </tr>
+                  <tr>
+                    <td><code>__enter__, __exit__</code></td>
+                    <td>Context manager</td>
+                    <td>with obj as var:</td>
+                  </tr>
+                  <tr>
+                    <td><code>__get__, __set__, __delete__</code></td>
+                    <td>Descriptor attributes</td>
+                    <td>X.attr, X.attr = value, del X.attr</td>
+                  </tr>
+                  <tr>
+                    <td><code>__new__</code></td>
+                    <td>Creation</td>
+                    <td>Object creation, before <code>__init__</code></td>
+                  </tr>
+                </tbody>
+              </table>
+            </li>
+          </ul>
+
+          <h4>Rest of chapter is about individual method overloading</h4>
+        </section><!-- /chapter-30 -->
+
+        <section class="chapter" id="chapter-31">
+          <header>
+            <h3>Chapter 31: Designing with Classes</h3>
+          </header>
+          <h4>Python and OOP</h4>
+          <ul>
+            <li>Since Python has no type declarations, polymorphism can't be based on method signatures, so it has to be based on object interfaces.</li>
+            <li>Don't attempt to code based on submitted datatypes--expect to have an object interface and code accordingly.</li>
+          </ul>
+
+          <h4>OOP and Inheritance: "Is-a" Relationships</h4>
+          <ul>
+            <li>In the following example, a <code>Monkey</code> object "is a" <code>Animal</code> object:
+<pre>
+class Animal:
+  def __repr__(self):
+    return "I'm an animal!"
+
+class Monkey(Animal):
+  pass
+
+m = Monkey()
+print(m)                      # Calls Animal.__repr__()
+</pre>
+            </li>
+          </ul>
+
+          <h4>OOP and Composition: "Has-a" Relationships</h4>
+          <ul>
+            <li>An object with another object embedded within it is said to have a "has-a" relationship with that embedded object.</li>
+            <li>In the following example, a <code>Building</code> object "has a" <code>Door</code> object:
+<pre>
+class Door:
+  pass
+
+class Building:
+  def __init__(self):
+    self.entrance = Door()
+</pre>
+            </li>
+          </ul>
+
+          <h4>OOP and Delegation: Wrapper Proxy Objects</h4>
+          <ul>
+            <li>Delegation implies controller objects that embed other objects to which they pass off operation requests.</li>
+            <li>Often implemented via <code>__getattr__</code>, which can route arbitrary access to a wrapped object:
+<pre>
+class Wrapper:
+  def __init__(self, object):
+    self.wrapped = object
+  def __getattr__(self, attrname):
+    print('Trace: ' + attrname)
+    return getattr(self.wrapped, attrname)
+</pre>
+            </li>
+          </ul>
+
+          <h4>Pseudoprivate Class Attributes</h4>
+          <ul>
+            <li>In C++ terms, all python attributes are public and virtual; accessible everywhere, looked up at runtime</li>
+            <li>Python supports 'name mangling', also called 'expansion', to localize some names in classes.</li>
+            <li>Mangling the name localizes it to the class that created it, but does not prevent outside access.</li>
+            <li>Within a <code>class</code> statement, any names starting with two underscores but not ending with two underscores are automatically expanded to include the name of the enclosing class at their front. Ex: <code>__X</code> inside the House module is expanded to <code>_House__X</code> automatically.</li>
+            <li>Since the modified name is reasonably unique, it shouldn't clash with similar names in the class hierarchy.</li>
+            <li>These are useful because in Python, all instance attributes are placed into the single instance object at the bottom of the class tree, and are shared by all class-level method functions the instance is passed into. This can be a problem in the following scenario:
+
+<pre>
+class C1:
+  def meth1(self): self.X = 88    # c1_instance.X
+  def meth2(self): print(self.X)
+
+class C2:
+  def metha(self): self.X = 99    # c2_instance.X
+  def methb(self): print(self.X)
+
+class C3(C1, C2): pass
+
+I1 = C3()                         # Attribute name collision on X
+</pre>
+            </li>
+            <li>The pseudoprivate alternative:
+<pre>
+class C1:
+  def meth1(self): <mark>self.__X = 88    # c1_instance._C1__X</mark>
+  def meth2(self): print(self.__X)
+
+class C2:
+  def metha(self): <mark>self.__X = 99    # c2_instance._C2__X</mark>
+  def methb(self): print(self.__X)
+
+class C3(C1, C2): pass
+
+I1 = C3()                         # No collision
+</pre>
+            </li>
+          </ul>
+
+          <h4>Methods are Objects: Bound or Unbound</h4>
+          <ul>
+            <li>Methods, like functions, are first class objects.</li>
+            <li>Since methods can be accessed from an instance or class object though, they come in two types in Python:
+              <ul>
+                <li>Unbound (class) method objects &mdash; Qualifying the method with the class name returns an unbound method object. Calling it requires providing an instance object explicitly as the first argument, because it gets no automatic <code>self</code> argument.</li>
+                <li>Bound (instance) method objects &mdash; Qualifying with the instance name will invoke the automatic <code>self</code> argument.</li>
+              </ul>
+            </li>
+            <li>Both bound and unbound methods can be passed around as objects.</li>
+          </ul>
+
+          <h4>Classes are Objects: Generic Object Factories</h4>
+          <ul>
+            <li>Classes are first class objects, and can be passed as arguments to functions which generate arbitrary objects--'factories'</li>
+            <li>Factories allow you to create an object of an appropriate instance at runtime, based on runtime variables.</li>
+            <li>Example:
+<pre>
+import os
+
+datatype = os.environ['MY_DATATYPE']
+
+from MyXML import MyXMLParser
+from MyJSON import MyJSONParser
+
+class factory(*pargs, **kargs)
+  aClass = None
+  if datatype == 'xml':
+    aClass = MyXMLParser()
+  elif datatype == 'json':
+    aClass = MyJSONParser()
+  return aClass
+
+parser = factory()
+</pre>
+            </li>
+          </ul>
+
+          <h4>Multiple Inheritance: Mix-in Classes</h4>
+          <ul>
+            <li>Mix-ins are typically classes added to an inheritance chain to provide a set of methods useful to multiple object types.</li>
+          </ul>
+        </section><!-- /chapter-31 -->
+
+        <section class="chapter" id="chapter-32">
+          <header>
+            <h3>Chapter 32: Advanced Class Topics</h3>
+          </header>
+          <h4>Extending Built-In Types</h4>
+          <ul>
+            <li>Wrapping a built in into a class lets you extend it with methods.</li>
+            <li>Subclassing a built in will often let you use your instances as standins for the original, with extended functionality.</li>
+          </ul>
+
+          <h4>The "New Style" Class Model</h4>
+          <ul>
+            <li>In 2.2 Python added 'new-style' classes. To be considered new style, a class in 2.X must explicitly inherit from <code>object</code>.</li>
+            <li>Just use new style classes everywhere.</li>
+          </ul>
+
+          <h4>New-Style Class Extensions</h4>
+          <ul>
+            <li>Putting a sequence of string attribute names into a class's <code>__slots__</code> attribute will limit a new style class to only those attributes on instances.</li>
+            <li>Writing to slots:
+<pre>
+class limiter(object):
+  __slots__ = ['age', 'name', 'job']
+
+x = limiter()
+x.age             # Raises AttributeError
+</pre>
+            </li>
+            <li>You probably shouldn't use them unless it's very clear they're needed.</li>
+            <li>Properties are another new-style extension that let you automatically define getters and setters.</li>
+            <li>Use sparingly, only adding accessors to attributes as needed.</li>
+            <li>Basic usage of the <code>property</code> built-in function:
+<pre>
+class properties(object):
+  def getage(self):
+    return 40
+  def setage(self, value):
+    print('set age: %s' % value)
+    self._age = value
+  age = property(getage, setage, None, None)  # get, set, del, docs
+</pre>
+            </li>
+          </ul>
+
+          <h4>Static and Class Methods</h4>
+          <ul>
+            <li>Static methods are like instance-less functions inside a class</li>
+            <li>Class methods are passed a class instead of an instance</li>
+            <li>To enable, you have to call <code>staticmethod</code> or <code>classmethod</code>, or invoke them with the <code>@<i>name</i></code> decorator</li>
+            <li>Python supports three kinds of class-related methods, with differing argument protocols:
+              <ul>
+                <li>Instance methods, passed a <code>self</code> instance object</li>
+                <li>Static methods, passed no extra object (created with <code>staticmethod(<i>methodname</i>)</code></li>
+                <li>Class methods, passed a class object (created with <code>classmethod(<i>methodname</i>)</code>, or via metaclasses</li>
+              </ul>
+            </li>
+            <li>Examples:
+<pre>
+class Methods:
+  def instance_m(self, x):
+    print([self, x])
+
+  def static_m(x):
+    print([x])
+
+  def class_m(cls, x):
+    print([cls, x])
+
+  static_m = staticmethod(static_m)
+  class_m  = classmethod(class_m)
+
+my_obj = Methods()
+
+my_obj.instance_m('aaa')              # calling instance method
+Methods.instance_m(my_obj, 'aaa')     # calling instance method
+
+Methods.static_m('bbb')               # calling static method
+
+Methods.class_m('ccc')                # calling class method
+my_obj.class_m('ccc')                 # calling class method
+</pre>
+            </li>
+          </ul>
+
+          <h4>Decorators and Metaclasses, Part 1</h4>
+
+          <ul>
+            <li>Decorators allow you to add logic that manages functions and classes, or later calls to them.</li>
+            <li>Two kinds, both ways to run extra processing at function and class definition time:
+              <ul>
+                <li>Function decorators &mdash; Wrap functions and methods in an extra layer of logic implemented in another function sometimes termed a 'metafunction'.</li>
+                <li>Class decorators &mdash; Add support for management of whole objects and their interfaces via augmentation of a class definition.</li>
+              </ul>
+            </li>
+            <li>A function decorator is syntactically a runtime declaration about the function that follows. They are coded on the line before the <code>def</code> statement that defines a function or method.</li>
+            <li>The decorator is declared with the @ symbol followed by the metafunction (or other callable object) that manages the following function.</li>
+            <li>Since 2.4 you can code static methods as:
+<pre>
+class C:
+  @staticmethod
+  def meth():
+    pass
+</pre>
+            </li>
+            <li>Decoration rebinds the method name to the decorator's result. The decorator can return the original function or a new proxy object that saves the original function passed to the decorator to be invoked directly after the extra logic layer runs.</li>
+            <li>Example of a user defined function decorator:
+<pre>
+class tracer:
+  def __init__(self, func):
+    self.calls = 0
+    self.func = func
+  def __call__(self, *args):
+    self.calls += 1
+    print('call %s to %s' % (self.calls, self.func.__name__))
+    return self.func(*args)
+
+@tracer
+def spam(a,b,c):
+  return a + b + c
+
+print(spam(1,2,3))    # Calls the tracer wrapper object, which runs __call__
+</pre>
+            </li>
+            <li>Class decorators are run at the end of a <code>class</code> statement to rebind a class name to a callable, which lets you manage classes after they are created or insert a layer of wrapper logic to manage instances created later. The decorator can augment the class itself or return a proxy object to intercept later instance construction calls.</li>
+            <li>Using a proxy object:
+<pre>
+def decorator(cls):
+  class Proxy:
+    def __init__(self, *args):
+      self.wrapped = cls(*args)
+    def __getattr__(self, name):
+      return getattr(self.wrapped, name)
+  return Proxy
+
+@decorator
+class C: pass
+X = C()               # Creates a Proxy wrapping a C, which will catch X.attr
+</pre>
+            </li>
+            <li>Metaclasses often intersect with class decorators, and give an alternate model that routes the creation of a class object to a subclass of the top-level <code>type</code> class, at the conclusion of a <code>class</code> statement.</li>
+            <li>A simple example:
+<pre>
+class Meta(type):
+  def __new__(meta, classname, supers, classdict):
+    ... extra logic + class creation via type call ...
+
+class C(metaclass=Meta):
+  ... creation of C instances routed to Meta ...
+</pre>
+            </li>
+        </section><!-- /chapter-32 -->
+      </section>
+    </article>
+    </div><!-- /container -->
+  </body>
+</html>
