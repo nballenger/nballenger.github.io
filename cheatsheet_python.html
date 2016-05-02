@@ -173,6 +173,7 @@ print message</pre>
               <li>Set operations are built into the language, so performing unions and intersections, as well as set comparisons, is syntactically simple.</li>
               <li>Single statement, anonymous functions (lambdas) can act as function literals, allowing a (limited) form of functional programming.</li>
               <li>List and dictionary 'comprehensions' allow quick filtering / mapping of composite variables.</li>
+              <li>Python 3.0+ removes or redefines some procedures from Python 2, and code written against the version 2 interpreter should not automatically be assumed to work with a version 3 interpreter.</li>
             </ul>
           </div>
         </div>
@@ -180,8 +181,16 @@ print message</pre>
   
       <section id="datatypes">
         <header><h1>Datatypes</h1></header>
-        <h2>Summary  of Type System</h2>
-        <h2>Idiosyncracies</h2>
+        <section id="datatypes_summary">
+            <header>
+                <h1>Summary  of Type System</h2>
+            </header>
+        </section>
+        <section id="datatypes_idiosyncracies">
+            <header>
+                <h1>Idiosyncracies</h2>
+            </header>
+        </section>
         <section id="datatypes_builtin">
           <header><h1>Built-In Datatypes</h1></header>
           <table class="table table-condensed">
@@ -295,6 +304,9 @@ d = "Alpha\nBeta"
             </tbody>
           </table>
         </section>
+        <section id="datatypes_from_std_lib">
+            <header>
+                <h1>
         <section id="datatypes_simple">
           <header><h1>Simple Types</h1></header>
           <section id="datatypes_simple_literals">
@@ -474,19 +486,32 @@ This is a docstring.
         <section id="syntax_operators">
           <header><h1>Operators</h1></header>
           <div class="bs-callout bs-callout-info">
-            <h2>A Note on Operator Symbols vs. Named Operations in Python</h2>
+            <h2>A Note on Operator Symbols and 'Magic Methods' in Python</h2>
             <p>Python has a full complement of operator symbols: <code>+</code>, <code>-</code>, <code>*</code>, <code>/</code>, <code>%</code>, <code>**</code>, <code>//</code>, and so on. In common usage they will appear as in most other languages. However, it is worth understanding the mechanism by which those operators are applied to Python objects, since they represent an abstraction that can be overloaded or repurposed.</p>
             <p>Since everything in Python is an object, applying binary or unary operations to operands actually means applying them to objects. That being the case, each object must define how it will respond to built in operators&mdash;when you combine two numbers with <code>+</code>, you are actually asking two <code>Number</code> objects to take part in a summation, rather than combining literal numeric primitives.</p>
             <p>Python accomplishes this through a series of operator overloading methods, which the common operator symbols are merely proxies for. So, for instance, adding two numeric objects with the <code>+</code> operator actually means calling the <code>__add__</code> method behind the scenes.</p>
             <p>These operator overloading methods are inherited by any object type capable of responding to their corresponding operator symbol, and you can overload the methods to define how objects of your own classes will respond to built in operators.</p>
+            <p>You can see more about these methods here: <a href="https://docs.python.org/2/reference/datamodel.html#specialnames" target="_blank">https://docs.python.org/2/reference/datamodel.html#specialnames</a></p>
             
           </div>
+          <ul class="nav nav-tabs nav-justified">
+            <li class="active"><a href="#ops-arithmetic" data-toggle="tab">Arithmetic</a></li>
+            <li><a href="#ops-comparison" data-toggle="tab">Comparison</a></li>
+            <li><a href="#ops-logical" data-toggle="tab">Logical</a></li>
+            <li><a href="#ops-bitwise" data-toggle="tab">Bitwise</a></li>
+            <li><a href="#ops-set" data-toggle="tab">Set</a></li>
+            <li><a href="#ops-string" data-toggle="tab">String</a></li>
+            <li><a href="#ops-assignment" data-toggle="tab">Assignment</a></li>
+            <li><a href="#ops-other" data-toggle="tab">Other</a></li>
+          </ul>
+          <div class="tab-content">
+            <div class="tab-pane active" id="ops-arithmetic">
           <section id="syntax_operators_arithmetic">
-            <header><h1>Arithmetic</h1></header>
             <table class="table table-condensed">
               <thead>
                 <tr>
                   <th scope="col">Operator</th>
+                  <th scope="col">Magic Method</th>
                   <th scope="col">Description</th>
                   <th scope="col">Example</th>
                 </tr>
@@ -494,6 +519,7 @@ This is a docstring.
               <tbody>
                 <tr>
                   <td><code>+</code></td>
+                  <td><code>obj.__add__(self,other)</code></td>
                   <td>Return the sum of the left and right operands.</td>
                   <td>
 <pre>10 + 5  # evaluates to 15</pre>
@@ -501,6 +527,7 @@ This is a docstring.
                 </tr>
                 <tr>
                   <td><code>-</code></td>
+                  <td><code>obj.__sub__(self,other)</code></td>
                   <td>Return the difference of the left operand minus the right operand.</td>
                   <td>
 <pre>20 - 2  # evaluates to 18</pre>
@@ -508,6 +535,7 @@ This is a docstring.
                 </tr>
                 <tr>
                   <td><code>*</code></td>
+                  <td><code>obj.__mul__(self,other)</code></td>
                   <td>Return the product of the left and right operands.</td>
                   <td>
 <pre>20 * 2  # Evaluates to 40</pre>
@@ -515,6 +543,7 @@ This is a docstring.
                 </tr>
                 <tr>
                   <td><code>/</code></td>
+                  <td><code>obj.__div__(self,other)</code></td>
                   <td>Return the quotient of the left operand divided by the right operand.</td>
                   <td>
 <pre>20 / 3    # Integer division: evaluates to 6
@@ -523,6 +552,7 @@ This is a docstring.
                 </tr>
                 <tr>
                   <td><code>%</code></td>
+                  <td><code>obj.__mod__(self,other)</code></td>
                   <td>Return the remainder of the left operand divided by the right operand.</td>
                   <td>
 <pre>20 % 3  # Evaluates to 2</pre>
@@ -530,6 +560,7 @@ This is a docstring.
                 </tr>
                 <tr>
                   <td><code>**</code></td>
+                  <td><code>obj.__pow__(self,other[,modulo])</code></td>
                   <td>Return the product of the left operand raised to the power of the right operand.</td>
                   <td>
 <pre>2 ** 5  # Evaluates to 32</pre>
@@ -537,17 +568,32 @@ This is a docstring.
                 </tr>
                 <tr>
                   <td><code>//</code></td>
+                  <td><code>obj.__floordiv__(self,other)</code></td>
                   <td>Return the integer floor of the quotient of the left operand divided by the right operand.</td>
                   <td>
 <pre>20 // 3    # Evaluates to 6
 20.0 // 3  # Evaluates to 6</pre>
                   </td>
                 </tr>
+                <tr>
+                  <th scope="row"><code>+</code>, <code>-</code></th>
+                  <td><code>obj.__pos__(self)</code> and <code>obj.__neg__(self)</code></td>
+                  <td>Unary identity, unary negation of the right operand.</td>
+                  <td>
+<pre>
++1         # Evaluates to 1
+-1         # Evaluates to -1
+-(+1)      # Evaluates to -1
++(-1)      # Evaluates to -1
+</pre>
+                  </td>
+                </tr>
               </tbody>
             </table>
           </section>
+            </div>
+            <div class="tab-pane" id="ops-comparison">
           <section id="syntax_operators_comparison">
-            <header><h1>Comparison</h1></header>
             <table class="table table-condensed">
               <thead>
                 <tr>
@@ -589,8 +635,9 @@ This is a docstring.
               </tbody>
             </table>
           </section>
+            </div>
+            <div class="tab-pane" id="ops-logical">
           <section id="syntax_operators_logical">
-            <header><h1>Logical</h1></header>
             <p>Note that Python does not have a native exclusive-or operator. The equivalent can be obtained by (among other methods) an equality comparison on the Boolean casts of two operands: <code>bool(a) != bool(b)</code>.</p>
             <table class="table table-condensed">
               <thead>
@@ -632,8 +679,9 @@ not False                 # True</pre>
               </tbody>
             </table>
           </section>
+            </div>
+            <div class="tab-pane" id="ops-bitwise">
           <section id="syntax_operators_bitwise">
-            <header><h1>Bitwise</h1></header>
             <table class="table table-condensed">
               <thead>
                 <tr>
@@ -711,8 +759,9 @@ bin(2&lt;&lt;2)         # Returns '0b1000'
               </tbody>
             </table>
           </section>
+            </div>
+            <div class="tab-pane" id="ops-set">
           <section id="syntax_operators_set">
-            <header><h1>Set</h1></header>
             <table class="table table-condensed">
               <thead>
                 <tr>
@@ -722,12 +771,140 @@ bin(2&lt;&lt;2)         # Returns '0b1000'
                 </tr>
               </thead>
               <tbody>
+                <tr>
+                  <th scope="row"><code>|</code></th>
+                  <td>Union of left and right set operands.</td>
+                  <td>
+<pre>
+a = {'a','b'}
+b = {'b','c'}
 
+a | b              # Returns set(['a','b','c'])
+</pre>
+                  </td>
+                </tr>
+                <tr>
+                  <th scope="row"><code>&amp;</code></th>
+                  <td>Intersection of the left and right set operands.</td>
+                  <td>
+<pre>
+a = {'a','b'}
+b = {'b','c'}
+
+a &amp; b              # Returns  set(['b'])
+</pre>
+                  </td>
+                </tr>
+                <tr>
+                  <th scope="row"><code>-</code></th>
+                  <td>The difference of the left and right set operands.</td>
+                  <td>
+<pre>
+a = {'a','b'}
+b = {'b','c'}
+
+a - b              # Returns set(['a'])
+b - a              # Returns set(['c'])
+</pre>
+                  </td>
+                </tr>
+                <tr>
+                  <th scope="row"><code>^</code></th>
+                  <td>Symmetric difference of left and right set operands&mdash;the union minus the intersection.</td>
+                  <td>
+<pre>
+a = {'a','b'}
+b = {'b','c'}
+
+a ^ b              # Returns set(['a', 'c'])
+b ^ a              # Returns set(['a', 'c'])
+</pre>
+                  </td>
+                </tr>
+                <tr>
+                  <th scope="row"><code>in</code>, <code>not in</code></th>
+                  <td>Test for whether left operand is a member of the set operand on the right.</td>
+                  <td>
+<pre>
+my_set = {'a','b','c'}
+
+'a' in my_set      # Returns True
+'z' in my_set      # Returns False
+'a' not in my_set  # Returns False
+'z' not in my_set  # Returns True
+</pre>
+                  </td>
+                </tr>
+                <tr>
+                  <th scope="row"><code>&lt;</code>, <code>&gt;</code></th>
+                  <td>Tests for whether the left operand is a proper subset or superset respectively of the right operand.</td>
+                  <td>
+<pre>
+a = {'a','b','c'}
+b = {'b','c'}
+c = {'b','c'}
+
+a &lt; b     # False
+a &lt; c     # False
+b &lt; a     # True
+b &lt; c     # False
+c &lt; a     # True
+c &lt; b     # False
+
+a &gt; b     # True
+a &gt; c     # True
+b &gt; a     # False
+b &gt; c     # False
+c &gt; a     # False
+c &gt; b     # False
+</pre>
+                  </td>
+                </tr>
+                <tr>
+                  <th scope="row"><code>&lt;=</code>, <code>&gt;=</code></th>
+                  <td>Tests whether the left set operand is a subset or superset respectively of the right operand.</td>
+                  <td>
+<pre>
+a = {'a','b','c'}
+b = {'b','c'}
+c = {'b','c'}
+
+a &lt;= b        # False
+a &lt;= c        # False
+b &lt;= a        # True
+b &lt;= c        # True
+c &lt;= a        # True
+c &lt;= b        # True
+
+a &gt;= b        # True
+a &gt;= c        # True
+b &gt;= a        # False
+b &gt;= c        # True
+c &gt;= a        # False
+c &gt;= b        # True
+</pre>
+                  </td>
+                </tr>
+                <tr>
+                  <th scope="row"><code>==</code></th>
+                  <td>Tests whether the left and right set operands are equal.</td>
+                  <td>
+<pre>
+a = {'a','b','c'}
+b = {'b','c'}
+c = {'b','c'}
+
+a == b            # False
+b == c            # True
+</pre>
+                  </td>
+                </tr>
               </tbody>
             </table>
           </section>
+            </div>
+            <div class="tab-pane" id="ops-string">
           <section id="syntax_operators_string">
-            <header><h1>String</h1></header>
             <table class="table table-condensed">
               <thead>
                 <tr>
@@ -741,8 +918,9 @@ bin(2&lt;&lt;2)         # Returns '0b1000'
               </tbody>
             </table>
           </section>
+            </div>
+            <div class="tab-pane" id="ops-assignment">
           <section id="syntax_operators_assignment">
-            <header><h1>Assignment</h1></header>
             <table class="table table-condensed">
               <thead>
                 <tr>
@@ -827,9 +1005,104 @@ b //= 3   # b is set to 3</pre>
               </tbody>
             </table>
           </section>
+            </div>
+            <div class="tab-pane" id="ops-other">
           <section id="syntax_operators_other">
-            <header><h1>Other</h1></header>
+            <table class="table">
+              <thead>
+                <tr>
+                  <th scope="col">Operator</th>
+                  <th scope="col">Description</th>
+                  <th scope="col">Example</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <th scope="row"><code>yield</code></th>
+                  <td></td>
+                  <td>
+<pre>
+</pre>
+                  </td>
+                </tr>
+                <tr>
+                  <th scope="row"><code>lambda</code></th>
+                  <td></td>
+                  <td>
+<pre>
+</pre>
+                  </td>
+                </tr>
+                <tr>
+                  <th scope="row"><code>if <i class="text-muted">...</i> else</code></th>
+                  <td></td>
+                  <td>
+<pre>
+</pre>
+                  </td>
+                </tr>
+                </tr>
+                <tr>
+                  <th scope="row"><code><i class="text-muted">someSequence</i>[<i class="text-muted">i</i>]</code></th>
+                  <td>Indexing into a sequence.</td>
+                  <td>
+<pre>
+</pre>
+                  </td>
+                </tr>
+                <tr>
+                  <th scope="row"><code><i class="text-muted">someSequence</i>[<i class="text-muted">i</i>:<i class="text-muted">j</i>:<i class="text-muted">k</i>]</code></th>
+                  <td>Slicing a sequence, with three optional bounds.</td>
+                  <td>
+<pre>
+</pre>
+                  </td>
+                </tr>
+                <tr>
+                  <th scope="row"><code><i class="text-muted">someCallable</i>()</code></th>
+                  <td>Call to a callable object.</td>
+                  <td>
+<pre>
+</pre>
+                  </td>
+                </tr>
+                <tr>
+                  <th scope="row"><code><i class="text-muted">someObj</i><b>.</b><i class="text-muted">someAttr</i></code></th>
+                  <td>Referencing an object attribute.</td>
+                  <td>
+<pre>
+</pre>
+                  </td>
+                </tr>
+                <tr>
+                  <th scope="row"><code><b>(</b><i class="text-muted">....</i><b>)</b></code></th>
+                  <td>Tuple, expression, or generator, depending on context and contents.</td>
+                  <td>
+<pre>
+</pre>
+                  </td>
+                </tr>
+                <tr>
+                  <th scope="row"><code><b>[</b><i class="text-muted">....</i><b>]</b></code></th>
+                  <td>List, list comprehension, depending on context and contents.</td>
+                  <td>
+<pre>
+</pre>
+                  </td>
+                </tr>
+                <tr>
+                  <th scope="row"><code><b>{</b><i class="text-muted">....</i><b>}</b></code></th>
+                  <td>Dictionary, set, dictionary comprehension, set comprehension, depending on context and contents.</td>
+                  <td>
+<pre>
+</pre>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
           </section>
+        </div>
+      </div>
           <section id="syntax_operators_associativity">
             <header><h1>Associativity and Precedence</h1></header>
           </section>

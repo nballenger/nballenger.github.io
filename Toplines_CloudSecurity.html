@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <title>Toplines: PostgreSQL: Up and Running, 2nd Edition, Hsu and Obe</title>
+    <link href="./bootstrap/css/bootstrap.min.css" rel="stylesheet">
+  </head>
+  <body>
+    <div class="container">
+    <article id="toplines-restful-web-services">
+      <header>
+      <h1>PostgreSQL: Up and Running, 2nd ed.<small>, Hsu and Obe, 2015</small></h1>
+      </header>
+
+      <div class="well"> 
+      <section id="executive-summary">
+        <header>
+          <h2 class="text-center">Executive Summary</h2>
+        </header>
+      </section>
+      </div>
+
+      <section id="chapter-summaries">
+        <header>
+          <h2 class="text-center">Chapter Summaries</h2>
+        </header>
+
+        <section class="chapter">
+          <header>
+          <h3>Security<small>, ch. 9 from <em>eCommerce in the Cloud</em> by Kelly Goetsch, O'Reilly Media, 2014</small></h3>
+          </header>
+
+          <h4>Payment Card Industry Data Security Standard (PCI DSS)</h4>
+          <ul>
+            <li><q>A merchant for the purposes of PCI is defined as any organization that handles credit card information or personally identifiable information related to credit cards.</q></li>
+            <li><strong>Personally Identifable Information (PII)</strong>: <q>any information about an individual maintained by an agency, including (1) any information that can be used to distinguish or trace an individual's identity, such as name, social security number, date and place of birth, mother's maiden name, or biometric records; and (2) any other information that is linked or linkable to an individual, such as medical, educational, financial, and employment information.</q></li>
+            <li>PCI DSS standard includes 6 objectives and 12 controls:
+              <table class="table table-bordered">
+                <thead>
+                  <tr>
+                    <th>Control Objective</th>
+                    <th>Requirements</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr>
+                    <td>Build and maintain a secure network and systems.</td>
+                    <td>
+                      <ol>
+                        <li>Install and maintain a firewall configuration to protect cardholder data.</li>
+                        <li>Do not use vendor-supplied defaults for system passwords and other security parameters.</li>
+                      </ol>
+                    </td>
+                  </tr>
+                  <tr>
+                    <td>Protect cardholder data.</td>
+                    <td>
+                      <ol start="3">
+                        <li>Protect stored cardholder data.</li>
+                        <li>Encrypt transmission of cardholder data across open public networks.</li>
+                      </ol>
+                    </td>
+                  </tr>
+                  <tr>
+                    <td>Maintain a vulnerability management program.</td>
+                    <td>
+                      <ol start="5">
+                        <li>Protect all systems against malware and regularly update antivirus software or programs.</li>
+                        <li>Develop and maintain secure systems and applications.</li>
+                      </ol>
+                    </td>
+                  </tr>
+                  <tr>
+                    <td>Implement strong access control measures.</td>
+                    <td>
+                      <ol start="7">
+                        <li>Restrict access to cardholder data by business need to know.</li>
+                        <li>Identify and authenticate access to system components.</li>
+                        <li>Restrict physical access to cardholder data.</li>
+                      </ol>
+                    </td>
+                  </tr>
+                  <tr>
+                    <td>Regularly monitor and test networks.</td>
+                    <td>
+                      <ol start="10">
+                        <li>Track and monitor all access to network resources and cardholder data.</li>
+                        <li>Regularly test security systems and processes.</li>
+                      </ol>
+                    </td>
+                  </tr>
+                  <tr>
+                    <td>Maintain an Information Security Policy</td>
+                    <td>
+                      <ol start="12">
+                        <li>Maintain a policy that addresses information security for all personnel.</li>
+                      </ol>
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+            </li>
+            <li>Validation is done annually by a third party qualified security assessor.</li>
+            <li><q>Your goal with PCI DSS should be to limit the scope of your cardholder data environment.</q></li>
+          </ul>
+        </section>
+      </section>
+    </article>
+  </body>
+</html> 

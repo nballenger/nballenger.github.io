@@ -1,0 +1,433 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <title>Toplines: Learning Geospatial Analysis with Python</title>
+    <link href="bootstrap/css/bootstrap.min.css" rel="stylesheet">
+  </head>
+  <body>
+    <div class="container">
+    <article id="toplines-nosql-distilled">
+      <header>
+        <h1>Learning Geospatial Analysis with Python<small>, by Joel Lawhead, 2013</small></h1>
+      </header>
+
+      <div class="well"> 
+        <section id="executive-summary">
+          <header>
+            <h2 class="text-center">Executive Summary</h2>
+          </header>
+        </section>
+      </div>
+
+      <section id="chapter-summaries">
+        <header>
+          <h2 class="text-center">Chapter Summaries</h2>
+        </header>
+
+        <section class="chapter" id="chapter-01">
+          <header>
+            <h3>Chapter 1: Learning Geospatial Analysis with Python</h3>
+          </header>
+
+          <h4>Geospatial analysis and our world</h4>
+          <ul>
+            <li>Blah blah, Nate Silver in 2012</li>
+          </ul>
+
+          <h4>History of geospatial analysis</h4>
+          <ul>
+            <li>Old maps!</li>
+            <li>GIS!</li>
+            <li>Remote sensing!</li>
+            <li>Digital Elevation Models!</li>
+            <li>CAD!</li>
+          </ul>
+
+          <h4>Geospatial analysis and computer programming</h4>
+          <ul>
+            <li>Programming is good for having control at all layers of the stack, automating repetitive tasks, sharing logical operations, and learning geospatial analysis more deeply.</li>
+            <li>Geospatial analysis is well suited to OO programming, because it's got so many object-like analogues.</li>
+          </ul>
+
+          <h4>Importance of geospatial analysis</h4>
+          <ul>
+            <li>There's a lot of people on earth, and a bunch of land. So duh, we need geospatial analysis.</li>
+          </ul>
+
+          <h4>Geographic Information System concepts</h4>
+          <ul>
+            <li><strong>Thematic maps</strong>:
+              <ul>
+                <li>Provides geographic context for information around a central idea or theme.</li>
+                <li>Uses minimal geographic features to avoid distracting the reader from the theme.</li>
+                <li>Often uses large scale political features (state boundaries, eg) to aggregate data.</li>
+              </ul>
+            </li>
+            <li><strong>Spatial databases</strong>:
+              <ul>
+                <li>A database with support for spatial types and operations.</li>
+              </ul>
+            </li>
+            <li><strong>Spatial indexing</strong>:
+              <ul>
+                <li>Organizing vector data for faster retrieval.</li>
+              </ul>
+            </li>
+            <li><strong>Metadata</strong>:
+              <ul>
+                <li>For geo data, typically provides source and history info for the dataset, and summary technical details.</li>
+                <li><a href="http://www.iso.org/iso/home/store/catalogue_tc/catalogue_detail.htm?csnumber=53798" target="_blank">ISO 19115-1</a> is a standard for geographic metadata.</li>
+              </ul>
+            </li>
+            <li><strong>Map projections</strong>:
+              <ul>
+                <li>Projections are methods for converting three dimensional data into x/y two dimensional data&mdash;flattening a view of the earth to make a map.</li>
+                <li><q>Projections are typically represented as a set of over 40 parameters as either XML or a text format called Well-Known Text or WKT, used to define the transformation algorithm.</q></li>
+                <li>Without information on the projection used in storing a dataset, you can end up with spatial data with no usable reference markers.</li>
+                <li>There are now global basemaps that allow common projections like Google Mercator.</li>
+                <li>Datasets are now better consolidated and standardized than they were even 10 years ago.</li>
+              </ul>
+            </li>
+            <li><strong>Rendering</strong>:
+              <ul>
+                <li>There's a lot of data, and storing it is different from displaying it&mdash;you create renders of specific views or analyses based on your stored datasets.</li>
+              </ul>
+            </li>
+          </ul>
+
+          <h4>Raster data concepts</h4>
+          <ul>
+            <li><strong>Images as data</strong>:
+              <ul>
+                <li>Raster data is stored as square tiles, which means storing a two dimensional array.</li>
+                <li>Multi-spectral data will have multiple arrays ("bands"), each geospatially referenced together to form a single view.</li>
+                <li>For remote sensing data, each pixel corresponds to a space with a real ground size.</li>
+                <li>Pixels as numeric array values can be manipulated with matrix operations.</li>
+                <li>Transformations on sensing data can give new analyses.</li>
+              </ul>
+            </li>
+            <li><strong>Remote sensing and color</strong>:
+              <ul>
+                <li>Remote sensing devices can detect wavelengths outside the visible light spectrum, which are then converted into pixel data that can be displayed as RGB values.</li>
+              </ul>
+            </li>
+          </ul>
+
+          <h4>Common vector GIS concepts</h4>
+          <ul>
+            <li>This is a non-exhaustive list of GIS processes.</li>
+            <li><strong>Data structures</strong>:
+              <ul>
+                <li>Vector data uses x/y(/z) coordinates, tagged with additional data points like timestamp, etc.</li>
+                <li>Coordinates can form points, lines, and polygons that model real world objects.</li>
+                <li>A GIS feature can be made up of one or more points, lines, and shapes.</li>
+                <li>Vector data typically represents topographic features better than raster data.</li>
+                <li>Important terms: bounding box (smallest rectangle containing all points in a data set) and convex hull (polygon containing all points in a data set).</li>
+              </ul>
+            </li>
+            <li><strong>Buffer</strong>:
+              <ul>
+                <li>Buffers establish an area around a point, line, or polygon, defined as all space within a given distance of an edge of that point, line, or polygon.</li>
+              </ul>
+            </li>
+            <li><strong>Dissolve</strong>:
+              <ul>
+                <li>Creates a single polygon out of adjacent polygons.</li>
+              </ul>
+            </li>
+            <li><strong>Generalize</strong>:
+              <ul>
+                <li>Reducing the number of points in a polygon to create an approximation of a complex shape.</li>
+                <li>Useful in web mapping, to get polygons to a resolution of 72dpi or lower.</li>
+              </ul>
+            </li>
+            <li><strong>Intersection</strong>:
+              <ul>
+                <li>Attempts to find the area of overlap between two features.</li>
+              </ul>
+            </li>
+            <li><strong>Merge</strong>:
+              <ul>
+                <li>Combines two or more non-overlapping shapes into a single, multishape object.</li>
+              </ul>
+            </li>
+            <li><strong>Point in polygon</strong>:
+              <ul>
+                <li>Query building block, a test for whether a point is inside a given polygon.</li>
+                <li>Most common/efficient algorithm for this is 'Ray Casting':
+                  <ol>
+                    <li>Test whether the point is on the polygon boundary.</li>
+                    <li>Draw a line from the point in a single direction.</li>
+                    <li>Count the number of times the line crosses the polygon boundary, until reaching the bounding box of the polygon.</li>
+                    <li>If the number is odd, the point is inside the polygon.</li>
+                  </ol>
+                </li>
+              </ul>
+            </li>
+            <li><strong>Union</strong>:
+              <ul>
+                <li>Combines two or more overlapping polygons intoa  single shape.</li>
+                <li>Similar to dissolve, but dissolve only combines adjacent polygons, not overlapping ones.</li>
+              </ul>
+            </li>
+            <li><strong>Join</strong>:
+              <ul>
+                <li>Combining two or more database tables via some equivalency condition.</li>
+              </ul>
+            </li>
+            <li><strong>Geospatial rules about polygons</strong>:
+              <ul>
+                <li>Rules of thumb for geospatial polygons, which are different from mathematical polygons:
+                  <ul>
+                    <li>Polygons mut have at least four points.</li>
+                    <li>A polygon boundary should not overlap itself.</li>
+                    <li>Polygons within a layer shouldn't overlap.</li>
+                    <li>A polygon within a layer inside another polygon is considered a hole in the underlying polygon.</li>
+                  </ul>
+                </li>
+                <li>Different software handles exceptions to the rules differently.</li>
+                <li>Best is to have your polygons obey the rules.</li>
+                <li>Polygons must also be closed shapes&mdash;some software will error on an open polygon, some will close it automatically.</li>
+              </ul>
+            </li>
+          </ul>
+
+          <h4>Common Raster Data Concepts</h4>
+          <ul>
+            <li><strong>Band math</strong>:
+              <ul>
+                <li>Multidimensional array mathematics.</li>
+              </ul>
+            </li>
+            <li><strong>Change detection</strong>:
+              <ul>
+                <li>Taking two images of the same location at different times, highlighting the changes.</li>
+              </ul>
+            </li>
+            <li><strong>Histogram</strong>:
+              <ul>
+                <li>Bar chart of the statistical distribtion of values in a data set.</li>
+              </ul>
+            </li>
+            <li><strong>Feature extraction</strong>:
+              <ul>
+                <li>Manual or automatic digitization of features in an image to points, lines, and polygons.</li>
+                <li>Example: extracting a coastline from a satellite imate, saving it as vector data.</li>
+              </ul>
+            </li>
+            <li><strong>Supervised classification</strong>:
+              <ul>
+                <li>Building classifications of light wavelengths for an area to the ground features they may represent (concrete, grass, trees, etc).</li>
+              </ul>
+            </li>
+            <li><strong>Unsupervised classification</strong>:
+              <ul>
+                <li>Having the computer group pixels with similar reflectance values.</li>
+              </ul>
+            </li>
+          </ul>
+
+          <h4>Creating the simplest possible Python GIS</h4>
+          <ul>
+            <li><strong>Getting started with Python</strong>:
+              <ul>
+                <li>Make sure you've got Python 2.7 with Tkinter.</li>
+                <li>Test with: <kbd>python -m turtle</kbd></li>
+              </ul>
+            </li>
+            <li><strong>Building SimpleGIS</strong>:
+              <ul>
+                <li>Code is in two parts: data model and map renderer.</li>
+                <li>Data model is just python lists, renderer is the Python Turtle graphics engine.</lii>
+                <li>Turtle uses a canvas with an origin of 0,0 in the center.</li>
+                <li>Simple gis program:
+<pre>
+#!/usr/bin/env python
+
+import turtle as t
+
+NAME = 0
+POINTS = 1
+POP = 2
+
+# Dataset:
+state = ["COLORADO", [[-109,37],[-109,41],[-102,41],[-102,37]], 5187582]
+cities = []
+cities.append(["DENVER", [-104.98, 39.74], 634265])
+cities.append(["BOULDER", [-105.27,40.02], 98889])
+cities.append(["DURANGO", [-107.88,37.28], 17069])
+
+# Viewport options:
+map_width = 400
+map_height = 300
+minx = 180
+maxx = -180
+miny = 90
+maxy = -90
+
+# Adjust the bounding box for the state:
+for x,y in state[POINTS]:
+  if x &lt; minx: minx = x
+  elif x &gt; maxx: maxx = x
+  if y &lt; miny: miny = y
+  elif y &gt; maxy: maxy = y
+
+# Get scaling factors for drawing
+dist_x = maxx - minx
+dist_y = maxy - miny
+x_ratio = map_width / dist_x
+y_ratio = map_height / dist_y
+
+# Convert a point according to the scaling factors
+def convert(point):
+    lon = point[0]
+    lat = point[1]
+    x = map_width - ((maxx - lon) * x_ratio)
+    y = map_height - ((maxy - lat) * y_ratio)
+    # starts in center, so offset points so they're centered
+    x = x - (map_width/2)
+    y = y - (map_height/2)
+    return [x,y]
+
+# Draw the state object
+t.up()
+first_pixel = None
+for point in state[POINTS]:
+  pixel = convert(point)
+  if not first_pixel:
+    first_pixel = pixel
+  t.goto(pixel)
+  t.down()
+
+t.goto(first_pixel)
+t.up()
+t.goto([0,0])
+t.write(state[NAME], align="center", font=("Arial", 16, "bold"))
+
+# Draw the cities
+for city in cities:
+  pixel = convert(city[POINTS])
+  t.up()
+  t.goto(pixel)
+  t.dot(10)
+  t.write(city[NAME] + ", Pop.: " + str(city[POP]), align="left")
+  t.up()
+
+# Perform some queries against the data
+biggest_city = max(cities, key=lambda city:city[POP])
+t.goto(0,-200)
+t.write("The biggest city is: " + biggest_city[NAME])
+
+western_city = min(cities, key=lambda city:city[POINTS])
+t.goto(0,-220)
+t.write("The western-most city is: " + western_city[NAME])
+
+# Hide the cursor and keep the window from closing
+t.pen(shown=False)
+t.done()
+</pre>
+                </li>
+              </ul>
+            </li>
+          </ul>
+        </section><!-- /chapter-01 -->
+
+        <section class="chapter" id="chapter-02">
+          <header>
+            <h3>Chapter 2: Geospatial Data</h3>
+          </header>
+          
+          <ul>
+            <li>Lots of possible data types, including: CSV, geotagged photos, vector data, remote sensing data, elevation data, XML files, JSON files, databases (servers and files)</li>
+            <li>You've got to preprocess data to make it usable, typically.</li>
+            <li>Data providers have tended in recent years to settle on data distribution in the Mercator projection.</li>
+            <li>Google standardized on the WGS 84 datum, which defines a specific spherical model of the earth (a "geoid") that defines the normal sea level. This is the same datum that GPS uses, which makes Google maps compatible with raw GPS data.</li>
+            <li>Google uses a very slightly modified Mercator projection called Google Mercator.</li>
+            <li>The European Petroleum Survey Group (EPSG) maintains numeric codes for projections. Google self assigned EPSG:900913 as the code for Google Mercator.</li>
+            <li>Two primary kinds of geodata: vector (points, lines, polygons) and raster (grids of numeric values).</li>
+          </ul>
+
+          <h4>Data structures</h4>
+          <ul>
+            <li>The structure of a data format is typically defined by its intended use.</li>
+            <li>Many popular formats are actually quite simple, to facilitate interchange.</li>
+            <li><strong>Common traits</strong>:
+              <ul>
+                <li>Geo-location: a method for referencing a real spot on earth from a data point.</li>
+                <li>Subject information: database and data dictionary for the data points.</li>
+                <li>Spatial indexing: indexes constructed for spatial querying against a dataset.
+                  <ul>
+                    <li>Indexing Algorithms:
+                      <ul>
+                        <li>Quad-Tree index: Each node in a Quad-Tree has four children, and the child nodes are typically squares or rectangles. When a node contains a specified number of features, it splits when additional features are added. Dividing the space into nested squares referenced from a tree speeds up lookups.</li>
+                        <li>R-Tree index: More sophisticated than Quad-Trees. Can handle 3D data, does better with storage space and memory. Nearby objects are grouped together using any of a variety of spatial algorithms, with all objects in a group bounded by a minimum rectangle. The rectangles are aggregated into hierarchical nodes that are balanced at each level. Bounding boxes may overlap across nodes.</li>
+                      </ul>
+                    </li>
+                    <li>Grids: Spatial indexes often use an integer grid, where the actual coordinates (which are floats) are mapped to a nearest integer. That lets the search be done using integer math to eliminate most possibilities, then the final steps can be done with higher precision.</li>
+                    <li>Overviews: Most common in raster formats, they're resampled, lower resolution versions of raster data sets that give thumbnails or faster views of images at different scales.</li>
+                  </ul>
+                </li>
+                <li>Metadata: Any data describing the associated data set.</li>
+                <li>File structure: The most frequently used storage formats for common geodata elements:
+                  <table class="table table-bordered">
+                    <thead>
+                      <tr>
+                        <th colspan="5">Storage formats for geospatial data elements</th>
+                      </tr>
+                      <tr>
+                        <th>Geo-location</th>
+                        <th>Subject Info.</th>
+                        <th>Spatial Indices</th>
+                        <th>Metadata</th>
+                        <th>Overviews</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      <tr>
+                        <td>Binary File header</td>
+                        <td>Binary file-based db</td>
+                        <td>Binary index file</td>
+                        <td>Text file</td>
+                        <td>Binary File header</td>
+                      </tr>
+                      <tr>
+                        <td>XML</td>
+                        <td>XML</td>
+                        <td>Footprint Index Vector Data (for Raster data)</td>
+                        <td>XML</td>
+                        <td>Binary file</td>
+                      </tr>
+                      <tr>
+                        <td>DB Table</td>
+                        <td>DB Table</td>
+                        <td>DB Table</td>
+                        <td>DB Table</td>
+                        <td>DB Table (blob)</td>
+                      </tr>
+                      <tr>
+                        <td>CSV</td>
+                        <td>CSV</td>
+                        <td colspan="3" rowspan=3">&nbsp;</td>
+                      </tr>
+                      <tr>
+                        <td>Text File</td>
+                        <td>Text File</td>
+                      </tr>
+                      <tr>
+                        <td>Binary File</td>
+                        <td>Binary File</td>
+                      </tr>
+                    </tbody>
+                  </table>
+                </li>
+              </ul>
+            </li>
+          </ul>
+                  
+              
+
+        </section><!-- /chapter-02 -->
+      </section><!-- /chapter-summaries -->
+    </article>
+  </body>
+</html> 

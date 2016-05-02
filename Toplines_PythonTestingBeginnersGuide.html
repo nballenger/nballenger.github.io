@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <title>Toplines: PostgreSQL: Up and Running, 2nd Edition, Hsu and Obe</title>
+    <link href="./bootstrap/css/bootstrap.min.css" rel="stylesheet">
+  </head>
+  <body>
+    <div class="container">
+    <article id="toplines-restful-web-services">
+      <header>
+      <h1>PostgreSQL: Up and Running, 2nd ed.<small>, Hsu and Obe, 2015</small></h1>
+      </header>
+
+      <div class="well"> 
+      <section id="executive-summary">
+        <header>
+          <h2 class="text-center">Executive Summary</h2>
+        </header>
+      </section>
+      </div>
+
+      <section id="chapter-summaries">
+        <header>
+          <h2 class="text-center">Chapter Summaries</h2>
+        </header>
+
+        <section class="chapter" id="chapter-01">
+          <header>
+            <h3>Chapter 1: Testing for Fun and Profit</h3>
+          </header>
+          <ul>
+            <li><strong>Unit Testing</strong> &mdash; A unit is a functionality that cannot be subdivided, unit tests individually test each unit within the software.</li>
+            <li><strong>Integration Testing</strong> &mdash; Test interactions between units, though each test is run in isolation.</li>
+            <li><strong>System Testing</strong> &mdash; Test portions of the system with all pieces intermeshed.</li>
+          </ul>
+        </section><!-- /chapter-01 -->
+
+        <section class="chapter" id="chapter-02">
+          <header>
+            <h3>Chapter 2: Doctest: The Easiest Testing Tool</h3>
+          </header>
+          <ul>
+            <li>Doctest takes the output of an interactive session and uses it to test.</li>
+            <li>A sample test.txt file:
+<pre>
+This is a doctest for arithmetic.
+&gt;&gt;&gt; 2 + 2
+4
+&gt;&gt;&gt; 3 * 3
+10
+</pre>
+            </li>
+            <li>Running that test: <kbd>python -m doctest test.txt</kbd></li>
+          </ul>
+        </section><!-- /chapter-02 -->
+
+        <section class="chapter" id="chapter-03">
+          <header>
+            <h3>Chapter 3: Unit Testing with Doctest</h3>
+          </header>
+
+        </section><!-- /chapter-03 -->
+
+        <section class="chapter" id="chapter-04">
+          <header>
+            <h3>Chapter 4: Breaking Tight Coupling by using Mock Objects</h3>
+          </header>
+          <ul>
+            <li>Chapter uses the Python Mocker toolkit, which is not part of the standard install.</li>
+            <li>Mock objects pretend to do what a real object would do, to isolate units that interact with that object.</li>
+            <li>
+          </ul>
+        </section><!-- /chapter-04 -->
+      </section>
+    </article>
+    </div>
+  </body>
+</html>

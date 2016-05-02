@@ -39,7 +39,25 @@
 
         <p>In addition, each of the three scalar types can be expanded into a Set type (via brackets). Note that <strong>set types are not arrays</strong>, and items within a set must be unique. You cannot store an empty set.</p>
 
-        <h3>Usage in Python</h3>
+        <h3>Experimenting with DynamoDB Locally</h3>
+
+        <p>There are instructions in the AWS docs for pulling down a JAR to run a local version of Dynamo:</p>
+
+        <p><a href="http://docs.aws.amazon.com/amazondynamodb/latest/developerguide/Tools.DynamoDBLocal.html" target="_blank">http://docs.aws.amazon.com/amazondynamodb/latest/developerguide/Tools.DynamoDBLocal.html</a></p>
+
+        <p>They largely amount to making sure you have a JRE from Java 6+, downloading the jar file and running it:</p>
+<pre>
+java -version
+mkdir ~/Desktop/dynamo_local;cd ~/Desktop/dynamo_local
+curl -L http://dynamodb-local.s3-website-us-west-2.amazonaws.com/dynamodb_local_latest \
+  -o dynamodb_local.tar.gz
+tar -xzf dynamodb_local.tar.gz
+java -Djava.library.path=./DynamoDBLocal_lib -jar DynamoDBLocal.jar -port 8810
+</pre>
+
+        <p>Make sure to note the differences between Local and the actual DynamoDB service, detailed here: <a href="http://docs.aws.amazon.com/amazondynamodb/latest/developerguide/Tools.DynamoDBLocal.html#Tools.DynamoDBLocal.Differences" target="_blank">http://docs.aws.amazon.com/amazondynamodb/...</a></p>
+
+        <h3>Example Item</h3>
         <p>An Item that might occur in a Table of books:
 <pre>
 {
@@ -51,6 +69,7 @@
 }
 </pre>
 
+        <h3>Usage via <code>boto.dynamodb2</code></h3>
         <p>The Python SDK is available via the <code>boto</code> library, and some sample operations on tables and items are as follows:</p>
 
 <pre>
